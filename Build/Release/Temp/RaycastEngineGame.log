@@ -1,0 +1,52 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(376,5): warning MSB8004: каталог Intermediate заканчивается не косой чертой.  Этот экземпляр сборки добавит косую черту, поскольку она необходима для правильного определения каталога Intermediate.
+  RaycastEngineGame.cpp
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(255): warning C4244: аргумент: преобразование "float" в "uint8_t", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(402): warning C4244: аргумент: преобразование "double" в "const T", возможна потеря данных
+          with
+          [
+              T=float
+          ]
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(409): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(441): warning C4244: аргумент: преобразование "double" в "T", возможна потеря данных
+          with
+          [
+              T=float
+          ]
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(448): warning C4244: аргумент: преобразование "double" в "T", возможна потеря данных
+          with
+          [
+              T=float
+          ]
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(455): warning C4244: аргумент: преобразование "double" в "T", возможна потеря данных
+          with
+          [
+              T=float
+          ]
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(462): warning C4244: аргумент: преобразование "double" в "T", возможна потеря данных
+          with
+          [
+              T=float
+          ]
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(493): warning C4244: =: преобразование "int32_t" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(664): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(673): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(677): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(699): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(700): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(701): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(702): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(708): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(720): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(721): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(736): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(828): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(857): warning C4244: аргумент: преобразование "float" в "int32_t", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(856): warning C4244: аргумент: преобразование "double" в "int32_t", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(866): warning C4244: аргумент: преобразование "float" в "int32_t", возможна потеря данных
+c:\users\sergey\desktop\raycastenginegame-master\raycastenginegame\raycastenginegame.cpp(865): warning C4244: аргумент: преобразование "double" в "int32_t", возможна потеря данных
+  Создание кода
+  4 of 1589 functions ( 0.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    2 functions had inline decision re-evaluated but remain unchanged
+  Создание кода завершено
+  RaycastEngineGame.vcxproj -> C:\Users\Sergey\Desktop\RaycastEngineGame-master\\Build\Release\RaycastEngineGame.exe
