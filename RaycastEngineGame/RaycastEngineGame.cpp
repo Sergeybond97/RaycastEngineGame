@@ -191,6 +191,7 @@ struct Sprite
 	double y;
 	int texture;
 	int spriteIndex;
+
 };
 
 #define numSprites 20
@@ -292,11 +293,44 @@ public:
 	}
 
 
+
+
+
+
+	bool LineIntersection(olc::vf2d ln1pnt1, olc::vf2d ln1pnt2, olc::vf2d ln2pnt1, olc::vf2d ln2pnt2){
+		
+		olc::vf2d line1 = ln1pnt2 - ln1pnt1;
+		olc::vf2d line2 = ln2pnt2 - ln2pnt1;
+
+		float cross1 = line1.cross(ln2pnt1 - ln1pnt1);
+		float cross2 = line1.cross(ln2pnt2 - ln1pnt1);
+
+		if ( copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0 )
+			return false;
+
+
+			
+		cross1 = line2.cross(ln1pnt1 - ln2pnt1);
+		cross2 = line2.cross(ln1pnt2 - ln2pnt1);
+
+		if ( copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0 )
+			return false;
+
+		return true;
+	}
+
+
+
+
 public:
 
 	double posX = 22, posY = 12;  //x and y start position
   	double dirX = -1, dirY = 0; //initial direction vector
   	double planeX = 0, planeY = 0.75; //the 2d raycaster version of camera plane
+
+
+	float fDistanceToWallInCenter = 0;
+
 
 
 	olc::Sprite spritesWall1;
@@ -637,6 +671,8 @@ public:
 			if (side == 0) perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX;
 			else           perpWallDist = (mapY - posY + (1 - stepY) / 2) / rayDirY;
 
+			if (x == ScreenWidth() / 2) fDistanceToWallInCenter = perpWallDist;
+
 			//std::cout << "\tLine to draw" << std::endl;
 			//Calculate height of line to draw on screen
 			int lineHeight = (int)(ScreenHeight() / perpWallDist);
@@ -879,8 +915,18 @@ public:
 		std::string text = "VEL : " + std::to_string(playerVelocity.x) + ", " + std::to_string(playerVelocity.y);
 		DrawString(10, 10, text, olc::WHITE);
 
-		text = "DIR : " + std::to_string(dirVector.x) + ", " + std::to_string(dirVector.y);
+		text = "POS : " + std::to_string(posX) + ", " + std::to_string(posY);
 		DrawString(10, 20, text, olc::WHITE);
+
+		text = "DIR : " + std::to_string(dirVector.x) + ", " + std::to_string(dirVector.y);
+		DrawString(10, 30, text, olc::WHITE);
+
+		text = "AIM DIST : " + std::to_string(fDistanceToWallInCenter);
+		DrawString(10, 40, text, olc::WHITE);
+
+		
+		text = "VIEW : " + std::to_string(dirX) + ", " + std::to_string(dirY);
+		DrawString(10, 50, text, olc::WHITE);
 
 
 		// Game logic ==============================================================================
@@ -892,8 +938,10 @@ public:
 
 
 
-
-
+		bool interc = LineIntersection(olc::vf2d(posX, posY), olc::vf2d(posX + dirX * fDistanceToWallInCenter, posY + dirY * fDistanceToWallInCenter), olc::vf2d(0, 5), olc::vf2d(20, 5));
+		
+		text = "INT : " + std::to_string(interc);
+		DrawString(10, 60, text, olc::WHITE);
 
 
 		// MIDI ==========================================================================================
@@ -929,7 +977,7 @@ int main()
 
 
 	Example demo;
-	if (demo.Construct(320, 200, 4, 4))
+	if (demo.Construct(320, 200, 2, 2))
 		demo.Start();
 	return 0;
 }
