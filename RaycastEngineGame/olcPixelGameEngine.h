@@ -401,6 +401,7 @@ namespace olc
 		v2d_generic(T _x, T _y) : x(_x), y(_y) {}
 		v2d_generic(const v2d_generic& v) : x(v.x), y(v.y) {}
 		v2d_generic& operator=(const v2d_generic& v) = default;
+
 		T mag() { return T(std::sqrt(x * x + y * y)); }
 		T mag2() { return x * x + y * y; }
 		v2d_generic  norm() {
@@ -408,6 +409,7 @@ namespace olc
 			T r = 1 / mag();
 			return v2d_generic(x * r, y * r);
 		}
+
 		v2d_generic  perp() { return v2d_generic(-y, x); }
 		T dot(const v2d_generic& rhs) { return this->x * rhs.x + this->y * rhs.y; }
 		T cross(const v2d_generic& rhs) { return this->x * rhs.y - this->y * rhs.x; }
