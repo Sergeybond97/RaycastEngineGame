@@ -115,7 +115,7 @@ void StartMIDI() {
 	}
 
 
-	tsf_set_volume(g_TinySoundFont, 0.5);
+	tsf_set_volume(g_TinySoundFont, 0.0);
 
 
 	// Start the actual audio playback here
@@ -158,38 +158,14 @@ void RestartMIDI() {
 
 
 
+std::string worldMapName;
+
+int worldMapWidth = 24;
+int worldMapHeight = 24;
+
+std::vector<int> worldMap;
 
 
-#define mapWidth 24
-#define mapHeight 24
-
-int worldMap[mapWidth][mapHeight]=
-{
-  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-};
 
 
 
@@ -207,19 +183,19 @@ void LoadMap(std::string mapName){
 	std::string paramMapName = "";
 
 	bool readMapWidth = false;
-	int paramMapWidthR = 0;
+	int paramMapWidth = 0;
 
 	bool readMapHeight = false;
-	int paramMapHeightR = 0;
+	int paramMapHeight = 0;
 
 	bool readingMapLayout = false;
-
+	bool readMapLayout = false;
 
 	if (myfile.is_open())
 	{
     	while ( std::getline (myfile,line) )
 		{
-			std::cout << line << '\n';
+			//std::cout << line << '\n';
 
 
 			// Check for parameters
@@ -238,14 +214,14 @@ void LoadMap(std::string mapName){
 				if (std::regex_match(param, std::regex("(width=\")(.*)(\")"))){
 					param = param.substr(7, param.length() - 8);
 					std::cout << "-> Width found : " << param << '\n';
-					paramMapWidthR = std::stoi(param);
+					paramMapWidth = std::stoi(param);
 					readMapWidth = true;
 				}
 
 				if (std::regex_match(param, std::regex("(height=\")(.*)(\")"))){
 					param = param.substr(8, param.length() - 9);
 					std::cout << "-> Height found : " << param << '\n';
-					paramMapHeightR = std::stoi(param);
+					paramMapHeight = std::stoi(param);
 					readMapHeight = true;
 				}
 			}
@@ -266,6 +242,7 @@ void LoadMap(std::string mapName){
 
 					if (std::regex_match(label, std::regex("(MAPEND)"))){
 						readingMapLayout = false;
+						readMapLayout = true;
 						continue;
 						std::cout << "-> MAPSTART found" << '\n';
 					}
@@ -280,28 +257,60 @@ void LoadMap(std::string mapName){
 					if (line[i] == ','){
 						if (number != ""){
 							mapLayout.push_back(std::stoi(number));
-							std::cout << "Map ID : " << number << std::endl;
+							//std::cout << "Map ID : " << number << std::endl;
 							number = "";
 						}
 					}else{
 						number += line[i];
 					}
 				}
-			}		
-
-
+			}
 		}
 		myfile.close();
+
+		
+		// Apply parameters
+		worldMap = mapLayout;
+		worldMapWidth = paramMapWidth;
+		worldMapHeight = paramMapHeight;
+		worldMapName = paramMapName;
+
+		std::cout << "============================" << std::endl;
+		std::cout << "Map : " << worldMapName << std::endl;
+		std::cout << "Width : " << worldMapWidth << "   Height : " << worldMapHeight << std::endl;
+		std::cout << "============================" << std::endl;
+
+
 	}
 	else std::cout << "Unable to open file";
 }
 
 
-void SaveMap(){
+void SaveMap(std::string mapName){
 	
+	std::ofstream myfile(mapName);
+	if (myfile.is_open())
+	{
+		myfile << "param:name=\"" << worldMapName << "\"" << std::endl;
+		myfile << "param:width=\"" << std::to_string(worldMapWidth) << "\"" << std::endl;
+		myfile << "param:height=\"" << std::to_string(worldMapHeight) << "\"" << std::endl;
+
+		myfile << "label:MAPSTART" << std::endl;
+
+		for (int i = 0; i < worldMapHeight; i++) {
+			for (int j = 0; j < worldMapWidth; j++) {
+				myfile << worldMap[i * worldMapWidth + j] << ",";
+			}
+			myfile << std::endl;
+		}
+
+		myfile << "label:MAPEND" << std::endl;
+
+		myfile.close();
+	}
+	else std::cout << "Unable to open file";
+
 }
-
-
 
 
 
@@ -385,6 +394,9 @@ public:
 	olc::Sprite spritesWall3;
 	olc::Sprite spritesWall4;
 	olc::Sprite spritesWall5;
+	olc::Sprite spritesWall6;
+	olc::Sprite spritesWall7;
+	olc::Sprite spritesWall8;
 
 	olc::Sprite spriteBarell;
 	olc::Sprite spritePillar;
@@ -611,10 +623,10 @@ public:
 				}
 
 
-				if (worldMap[int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))][int(position.y)] == false)
+				if (worldMap[int(position.y) * worldMapWidth + int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))] == false)
 					position.x += velocity.x * fElapsedTime * 600;
 
-				if (worldMap[int(position.x)][int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5))] == false)
+				if (worldMap[int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5)) * worldMapWidth + int(position.x)] == false)
 					position.y += velocity.y * fElapsedTime * 600;
 
 				engineReference->UpdateThings();
@@ -767,7 +779,7 @@ public:
 		olc::vf2d position = olc::vf2d{ 0, 0 };
 		olc::vf2d direction = olc::vf2d{ -1, 0 };
 
-		olc::vf2d viewPlane = olc::vf2d{ 0, 0.75 }; //the 2d raycaster version of camera plane
+		olc::vf2d viewPlane = olc::vf2d{ 0, -0.75 }; //the 2d raycaster version of camera plane
 
 		// Collision
 		bool enableCollision = true;
@@ -833,10 +845,10 @@ public:
 			}
 
 
-			if (worldMap[int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.5))][int(position.y)] == false)
+			if (worldMap[int(position.y) * worldMapWidth + int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.5))] == false)
 				position.x += playerVelocity.x * fElapsedTime * 600;
 
-			if (worldMap[int(position.x)][int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.5))] == false)
+			if (worldMap[int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.5)) * worldMapWidth + int(position.x)] == false)
 				position.y += playerVelocity.y * fElapsedTime * 600;
 
 
@@ -988,6 +1000,9 @@ public:
 		LoadSprite(&spritesWall3, "gfx/wall_metal1.png");
 		LoadSprite(&spritesWall4, "gfx/wall_stoneBlue1.png");
 		LoadSprite(&spritesWall5, "gfx/wall_wood1.png");
+		LoadSprite(&spritesWall6, "gfx/wall_concrete1.png");
+		LoadSprite(&spritesWall7, "gfx/wall_concreteBrick1.png");
+		LoadSprite(&spritesWall8, "gfx/wall_concreteBrick2.png");
 
 		LoadSprite(&spriteBarell, "gfx/barrel.png");
 		LoadSprite(&spritePillar, "gfx/pillar.png");
@@ -1015,6 +1030,9 @@ public:
 			case 2: return &spritesWall3;
 			case 3: return &spritesWall4;
 			case 4: return &spritesWall5;
+			case 5: return &spritesWall6;
+			case 6: return &spritesWall7;
+			case 7: return &spritesWall8;
 			default: return &spritesWall5;
 		}
 	}
@@ -1173,7 +1191,7 @@ public:
 			}
 			stepsDone++;
 			//Check if ray has hit a wall
-			if (worldMap[mapPosition.x][mapPosition.y] > 0) hit = 1;
+			if (worldMap[mapPosition.y * worldMapWidth + mapPosition.x] > 0) hit = 1;
 		}
 
 
@@ -1267,7 +1285,7 @@ public:
 				}
 				stepsDone++;
 				//Check if ray has hit a wall
-				if (worldMap[mapPosition.x][mapPosition.y] > 0) hit = 1;
+				if (worldMap[mapPosition.y * worldMapWidth + mapPosition.x] > 0) hit = 1;
 			}
 
 
@@ -1295,7 +1313,7 @@ public:
 
 			//choose wall texture
 			olc::Pixel color;
-			int textureNumber = worldMap[mapPosition.x][mapPosition.y] - 1;
+			int textureNumber = worldMap[mapPosition.y * worldMapWidth + mapPosition.x] - 1;
 
 
 			float wallYstep = 1.0 / lineHeight;
@@ -1368,12 +1386,12 @@ public:
 
 				if (!drawnPixels[y * ScreenWidth() + x]) {
 					// floor
-					olc::Pixel color = GetWallTexture(0)->Sample(floorX - cellX, floorY - cellY);
+					olc::Pixel color = GetWallTexture(7)->Sample(floorX - cellX, floorY - cellY);
 					color = DarkColor(color, shading);
 					Draw(x, y, color);
 
 					//ceiling (symmetrical, at screenHeight - y - 1 instead of y)
-					color = GetWallTexture(4)->Sample(floorX - cellX, floorY - cellY);
+					color = GetWallTexture(5)->Sample(floorX - cellX, floorY - cellY);
 					color = DarkColor(color, shading);
 					Draw(x, ScreenHeight() - y - 1, color);
 				}
@@ -1528,13 +1546,13 @@ public:
 			// Rotate to the right
 			if (GetKey(olc::Key::RIGHT).bHeld)
 			{
-				player.controlRotationVector = olc::vf2d(-1, 0);
+				player.controlRotationVector = olc::vf2d(1, 0);
 			}
 
 			// Rotate to the left
 			if (GetKey(olc::Key::LEFT).bHeld)
 			{
-				player.controlRotationVector = olc::vf2d(1, 0);
+				player.controlRotationVector = olc::vf2d(-1, 0);
 			}
 
 
@@ -1571,7 +1589,7 @@ public:
 		if (IsFocused() && !isMenuOpen && !isEditorOpened) {
 			if (GetWindowMouse().x != 0 && GetWindowMouse().y != 0) { // To prevent cursor set while dragging window
 
-				float deltaMouseX = (-2) * fElapsedTime * (GetWindowMouse().x - GetWindowSize().x / 2);
+				float deltaMouseX = 2 * fElapsedTime * (GetWindowMouse().x - GetWindowSize().x / 2);
 				player.controlRotationVector += olc::vf2d(deltaMouseX, 0);
 				SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2);
 			}
@@ -1597,10 +1615,7 @@ public:
 			SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2); // Return cursor to center
 		}
 
-		if (GetKey(olc::Key::G).bPressed)
-		{
-			showGrid = !showGrid;
-		}
+
 
 
 	}
@@ -1725,43 +1740,65 @@ public:
 
 	olc::vi2d selecterCell{0,0};
 
+	int editorCellSize = 20;
 
-	void DrawEditor() {
+	bool mouseOnUI = false;
+
+	int selectedTexture = 1;
+
+
+	void DrawEditor(float fElapsedTime) {
 		
+
 		FillRect(0,0, ScreenWidth(), ScreenHeight(), olc::VERY_DARK_GREY );
 
 
 		if (GetKey(olc::Key::LEFT).bHeld) {
-			gridShift.x = (gridShift.x + 1) % 20;
-			gridOrigin.x = gridOrigin.x + 1;
+			gridShift.x = (gridShift.x + int(10 * (fElapsedTime / 0.016))) % 20;
+			gridOrigin.x = gridOrigin.x + int(10 * (fElapsedTime / 0.016));
 		}
 		if (GetKey(olc::Key::RIGHT).bHeld) {
-			gridShift.x = (gridShift.x - 1) % 20;
-			gridOrigin.x = gridOrigin.x - 1;
+			gridShift.x = (gridShift.x - int(10 * (fElapsedTime / 0.016))) % 20;
+			gridOrigin.x = gridOrigin.x - int(10 * (fElapsedTime / 0.016));
 		}
 		if (GetKey(olc::Key::UP).bHeld) {
-			gridShift.y = (gridShift.y + 1) % 20;
-			gridOrigin.y = gridOrigin.y + 1;
+			gridShift.y = (gridShift.y + int(10 * (fElapsedTime / 0.016))) % 20;
+			gridOrigin.y = gridOrigin.y + int(10 * (fElapsedTime / 0.016));
 		}
 		if (GetKey(olc::Key::DOWN).bHeld) {
-			gridShift.y = (gridShift.y - 1) % 20;
-			gridOrigin.y = gridOrigin.y - 1;
+			gridShift.y = (gridShift.y - int(10 * (fElapsedTime / 0.016))) % 20;
+			gridOrigin.y = gridOrigin.y - int(10 * (fElapsedTime / 0.016));
+		}
+
+
+
+		if (GetKey(olc::Key::NP_ADD).bPressed) {
+			editorCellSize = 20;
+		}
+
+		if (GetKey(olc::Key::NP_SUB).bPressed) {
+			editorCellSize = 10;
+		}
+
+		if (GetKey(olc::Key::G).bPressed)
+		{
+			showGrid = !showGrid;
 		}
 
 
 
 		// Draw map
 
-		int sampleSize = 18 + !showGrid * 2;
+		int sampleSize = editorCellSize - 1 + !showGrid;
 
-		for (int i = 0; i < mapWidth; i++) {
-			for (int j = 0; j < mapHeight; j++) {
+		for (int i = 0; i < worldMapWidth; i++) {
+			for (int j = 0; j < worldMapHeight; j++) {
 				
-				if (worldMap[i][j] != 0){
+				if (worldMap[j * worldMapWidth + i] != 0){
 					for (int smplX = 0; smplX < sampleSize; smplX++) {
 						for (int smplY = 0; smplY < sampleSize; smplY++) {
-							olc::Pixel color = GetWallTexture(worldMap[i][j] - 1)->GetPixel(int(64.0 / 20 * smplX), int(64.0 / 20 * smplY));
-							Draw(gridOrigin.x + 1 + smplX + i * 20, gridOrigin.y + 1 + smplY + j * 20, color);
+							olc::Pixel color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+							Draw(gridOrigin.x + 1 + smplX + i * editorCellSize, gridOrigin.y + 1 + smplY + j * editorCellSize, color);
 						}
 					}
 				}
@@ -1773,12 +1810,12 @@ public:
 		// Grid
 		if (showGrid) {
 			// Vertical lines
-			for (int i = 0; i < 17; i++) {
-				DrawLine(i * 20 + gridShift.x, 0, i * 20 + gridShift.x, ScreenHeight(), olc::GREY);
+			for (int i = 0; i < int(ScreenWidth() / editorCellSize) + 2; i++) {
+				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), olc::GREY);
 			}
 			// Horisontal lines
-			for (int j = 0; j < 11; j++) {
-				DrawLine(0, j * 20 + gridShift.y, ScreenWidth(), j * 20 + gridShift.y, olc::GREY);
+			for (int j = 0; j < int(ScreenHeight() / editorCellSize) + 2; j++) {
+				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, olc::GREY);
 			}
 
 
@@ -1791,22 +1828,87 @@ public:
 
 
 		// Selection
-		DrawRect(gridOrigin.x + selecterCell.x * 20, gridOrigin.y + selecterCell.y * 20, 20, 20, olc::RED);
+		DrawRect(gridOrigin.x + selecterCell.x * editorCellSize, gridOrigin.y + selecterCell.y * editorCellSize, editorCellSize, editorCellSize, olc::RED);
 
 
-		selecterCell.x = floor((GetMouseX() - gridOrigin.x) / 20.0);
-		selecterCell.y = floor((GetMouseY() - gridOrigin.y) / 20.0);
+		selecterCell.x = floor((GetMouseX() - gridOrigin.x) / (editorCellSize * 1.0));
+		selecterCell.y = floor((GetMouseY() - gridOrigin.y) / (editorCellSize * 1.0));
 
-		std::string cellText = "Cell : " + std::to_string(selecterCell.x) + " " + std::to_string(selecterCell.y);
-		DrawString(5, 5, cellText);
+		std::string cellText = std::to_string(selecterCell.x) + " " + std::to_string(selecterCell.y);
+		DrawString(5, ScreenHeight() - 10, cellText);
 
 
-		if (GetMouse(0).bPressed) {
-			worldMap[selecterCell.x][selecterCell.y] = 3;
+
+		// UI	
+
+		// Save button
+		if (GetMouseX() > 0 && GetMouseX() < 42 && GetMouseY() > 0 && GetMouseY() < 17) {
+			mouseOnUI = true;
+
+			FillRect(1, 1, 41, 16, olc::BLACK);
+			DrawRect(0, 0, 42, 17, olc::YELLOW);
+			DrawString(5, 5, "SAVE", olc::YELLOW);
+
+			if (GetMouse(0).bPressed) {
+				SaveMap("maps/map02.txt");
+			}
 		}
-		if (GetMouse(1).bPressed) {
-			worldMap[selecterCell.x][selecterCell.y] = 0;
+		else {
+			mouseOnUI = false;
+
+			FillRect(1, 1, 41, 16, olc::BLACK);
+			DrawRect(0, 0, 42, 17, olc::WHITE);
+			DrawString(5, 5, "SAVE", olc::WHITE);
 		}
+
+
+
+		if (GetMouseX() > 0 && GetMouseX() < 40 && GetMouseY() > 40 && GetMouseY() < 60) {
+			mouseOnUI = true;
+
+			for (int smplX = 0; smplX < 18; smplX++) {
+				for (int smplY = 0; smplY < 18; smplY++) {
+					olc::Pixel color = GetWallTexture(selectedTexture - 1)->GetPixel(int(64.0 / 18 * smplX), int(64.0 / 18 * smplY));
+					Draw(smplX + 1, smplY + 41, color);
+				}
+			}
+			DrawRect(0, 40, 20, 20, olc::YELLOW);
+
+			if (GetMouse(0).bPressed) {
+				selectedTexture = (selectedTexture + 1) % 9;
+			}
+		}
+		else {
+			mouseOnUI = false;
+
+			for (int smplX = 0; smplX < 18; smplX++) {
+				for (int smplY = 0; smplY < 18; smplY++) {
+					olc::Pixel color = GetWallTexture(selectedTexture - 1)->GetPixel(int(64.0 / 18 * smplX), int(64.0 / 18 * smplY));
+					Draw(smplX + 1, smplY + 41, color);
+				}
+			}
+			DrawRect(0, 40, 20, 20, olc::WHITE);
+		}
+
+
+
+		// Editing
+
+		if (GetMouse(0).bPressed && !mouseOnUI) {
+			if (selecterCell.x >= 0 && selecterCell.y >= 0) { // Check map boundaries
+				worldMap[selecterCell.y * worldMapWidth + selecterCell.x] = selectedTexture;
+			}
+		}
+		if (GetMouse(1).bPressed && !mouseOnUI) {
+			if (selecterCell.x >= 0 && selecterCell.y >= 0) { // Check map boundaries
+				worldMap[selecterCell.y * worldMapWidth + selecterCell.x] = 0;
+			}
+		}
+
+
+
+
+
 
 
 	}
@@ -1819,6 +1921,7 @@ public:
 	{
 
 		LoadMap("maps/map01.txt");
+
 
 		// Initialisation ====================================================================
 
@@ -1847,7 +1950,7 @@ public:
 		player.engineReference = this;
 		player.position = olc::vf2d{ 22.0, 12.0 };
 		player.direction = olc::vf2d{ -1, 0 };
-		player.viewPlane = olc::vf2d{ 0, 0.75 };
+		player.viewPlane = olc::vf2d{ 0, -0.75 };
 
 		// Create enemies -----------------------------
 
@@ -1999,7 +2102,7 @@ public:
 
 		}else{
 
-			DrawEditor();
+			DrawEditor(fElapsedTime);
 
 			// Draw mouse cursor
 			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, olc::CYAN);
@@ -2014,7 +2117,7 @@ public:
 
 		if (isMenuOpen) {
 
-			int menuItemSelected = 0;
+			int menuItemSelected = -1;
 
 			if (GetMouseY() > 67 && GetMouseY() <= 87) {
 				menuItemSelected = 0;
@@ -2045,8 +2148,10 @@ public:
 			DrawString(90, 125, "Exit", olc::YELLOW, 2);
 
 
-			DrawString(72, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-			DrawString(70, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+			if (menuItemSelected != -1) {
+				DrawString(72, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
+				DrawString(70, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+			}
 
 
 			// Draw mouse cursor
@@ -2161,7 +2266,7 @@ int main()
 	ShowCursor(false);
 
 	RaycastEngine engine;
-	if (engine.Construct(320, 200, 2, 2, false, true))
+	if (engine.Construct(320, 200, 4, 4, false, true))
 		engine.Start();
 
 
