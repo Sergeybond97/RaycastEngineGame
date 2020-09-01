@@ -307,6 +307,8 @@ void SaveMap(std::string mapName){
 		myfile << "label:MAPEND" << std::endl;
 
 		myfile.close();
+
+		std::cout << "Map \"" << worldMapName << "\" saved : " << mapName << std::endl; 
 	}
 	else std::cout << "Unable to open file";
 
@@ -1100,6 +1102,151 @@ public:
 				if (sprite->GetPixel(i, j) != transparancyColor)
 					Draw(x + (i % regionW), y + (j % regionH), sprite->GetPixel(i, j));
 	}
+
+
+	// UI
+
+
+	class Button {
+
+	public:
+
+		RaycastEngine* engineReference;
+
+		olc::vi2d position;
+
+		uint32_t width;
+		uint32_t height;
+
+		bool enabled;
+
+		bool showBorder;
+		bool showBackground;
+
+		olc::Pixel colorBorder;
+		olc::Pixel colorBackground;
+		olc::Pixel colorText;
+		olc::Pixel colorHovered;
+		olc::Pixel colorPressed;
+
+
+		std::string text;
+		olc::Sprite* sprite;
+
+
+		Button(RaycastEngine* engine){
+			engineReference = engine;
+			position = olc::vi2d(0,0);
+			width = 20;
+			height = 40;
+			enabled = true;
+			showBorder= true;
+			showBackground = true;
+			colorBorder = olc::GREY;
+			colorBackground = olc::BLACK;
+			colorText = olc::WHITE;
+			colorHovered = olc::YELLOW;
+			colorPressed = olc::DARK_YELLOW;
+			text = "BTN";
+			sprite = nullptr;
+		}
+
+		Button(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, std::string txt){
+			engineReference = engine;
+			position = pos;
+			width = w;
+			height = h;
+			enabled = true;
+			showBorder= true;
+			showBackground = true;
+			colorBorder = olc::GREY;
+			colorBackground = olc::BLACK;
+			colorText = olc::WHITE;
+			colorHovered = olc::YELLOW;
+			colorPressed = olc::DARK_YELLOW;
+			text = txt;
+			sprite = nullptr;
+		}
+
+		Button(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, olc::Sprite* img){
+			engineReference = engine;
+			position = pos;
+			width = w;
+			height = h;
+			enabled = true;
+			showBorder = true;
+			showBackground = true;
+			colorBorder = olc::GREY;
+			colorBackground = olc::BLACK;
+			colorText = olc::WHITE;
+			colorHovered = olc::YELLOW;
+			colorPressed = olc::DARK_YELLOW;
+			text = "";
+			sprite = img;
+		}
+
+
+
+		void Update(){
+			
+
+			// Check mouse input
+
+			bool isHovered = false;
+
+			olc::vi2d mousePos = olc::vi2d(engineReference->GetMouseX(), engineReference->GetMouseY());
+			if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
+			{
+				isHovered = true;
+			}
+
+
+			// Draw button
+
+			if (showBorder){
+				engineReference->DrawRect(position.x, position.y, width, height, colorBorder);
+				if (showBackground){
+					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground);
+				}
+			}else{
+				if (showBackground){
+					engineReference->FillRect(position.x, position.y, width, height, colorBackground);
+				}
+			}
+
+			// Draw selection
+			if (isHovered){
+				engineReference->DrawRect(position.x, position.y, width, height, colorHovered);
+			}
+
+			// Draw content
+
+			if (text != ""){
+				engineReference->DrawString(position.x + 6, position.y + (height / 2 - 3), text, colorText);
+			}
+
+			if (sprite != nullptr){
+				
+				for (int smplX = 0; smplX < width - 2; smplX++) {
+					for (int smplY = 0; smplY < height - 2; smplY++) {
+						olc::Pixel color = sprite->GetPixel(int( sprite->width / (width - 2) * smplX), int( sprite->height / (height - 2) * smplY));
+						engineReference->Draw(smplX + position.x + 1, smplY + position.y + 1, color);
+					}
+				}
+			}
+
+
+
+
+
+		}
+
+	};
+
+
+
+
+
 
 
 	// For ray collision calculations
@@ -2084,6 +2231,8 @@ public:
 
 
 
+	Button testButton = Button(this, olc::vi2d(50,50), 50,30, "Button");
+
 	bool isEditorOpened = false;
 
 
@@ -2116,6 +2265,8 @@ public:
 		// Menu ==============================================================================
 
 		if (isMenuOpen) {
+
+			
 
 			int menuItemSelected = -1;
 
@@ -2206,6 +2357,11 @@ public:
 
 
 
+
+
+		testButton.Update();
+
+
 		// Debug info ==============================================================================
 
 		//std::string text = "VEL : " + std::to_string(player.playerVelocity.x) + ", " + std::to_string(player.playerVelocity.y);
@@ -2266,7 +2422,7 @@ int main()
 	ShowCursor(false);
 
 	RaycastEngine engine;
-	if (engine.Construct(320, 200, 4, 4, false, true))
+	if (engine.Construct(320, 200, 2, 2, false, true))
 		engine.Start();
 
 
