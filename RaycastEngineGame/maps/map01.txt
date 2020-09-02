@@ -29,11 +29,63 @@ label:MAPSTART
 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 label:MAPEND
 
-enemy:id="0":position:"5.0,5.0"
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
+enemy:type="0":position="18.5, 15.5":
+enemy:type="0":position="15.5, 10.5":
+enemy:type="0":position="16.0, 15.0":
+enemy:type="0":position="15.0, 18.5":
 
-Some
-Trash
-Data
+decoration:type="2":position="15.5, 11.5":
+decoration:type="2":position="20.5, 11.5":
+decoration:type="2":position="18.5, 4.5 ":
+decoration:type="2":position="10.0, 4.5 ":
+decoration:type="2":position="10.0, 12.5":
+decoration:type="2":position="3.5,  6.5 ":
+decoration:type="2":position="3.5,  20.5":
+decoration:type="2":position="3.5,  14.5":
+decoration:type="2":position="14.5, 20.5":
+
+decoration:type="1":position="18.5, 10.5":
+decoration:type="1":position="18.5, 11.5":
+decoration:type="1":position="18.5, 12.5":
+
+decoration:type="0":position="21.5, 1.5 ":
+decoration:type="0":position="15.5, 1.5 ":
+decoration:type="0":position="16.0, 1.8 ":
+decoration:type="0":position="16.2, 1.2 ":
+decoration:type="0":position="3.5,  2.5 ":
+decoration:type="0":position="9.5,  15.5":
+decoration:type="0":position="10.0, 15.1":
+decoration:type="0":position="10.5, 15.8":
 
 
+item:type="0":position="13.5, 11.5":
+item:type="0":position="20.5, 12.5":
+item:type="0":position="18.5, 8.5 ":
+item:type="0":position="12.0, 6.5 ":
+item:type="0":position="18.0, 15.5":
+item:type="1":position="11.5, 20.0":
+item:type="1":position="12.5, 20.0":
+item:type="1":position="13.5, 20.0":
+item:type="2":position="14.5, 20.0":
+item:type="2":position="15.5, 20.0":
 

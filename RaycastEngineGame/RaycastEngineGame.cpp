@@ -158,218 +158,10 @@ void RestartMIDI() {
 
 
 
-std::string worldMapName;
 
-int worldMapWidth = 24;
-int worldMapHeight = 24;
-
-std::vector<int> worldMap;
-
-
-
-
-
-
-void LoadMap(std::string mapName){
-
-
-	std::vector<int> mapLayout;
-
-
-	std::string line;
-	std::ifstream myfile (mapName);
-
-	bool readMapName = false;
-	std::string paramMapName = "";
-
-	bool readMapWidth = false;
-	int paramMapWidth = 0;
-
-	bool readMapHeight = false;
-	int paramMapHeight = 0;
-
-	bool readingMapLayout = false;
-	bool readMapLayout = false;
-
-	if (myfile.is_open())
-	{
-    	while ( std::getline (myfile,line) )
-		{
-			//std::cout << line << '\n';
-
-
-			// Check for parameters
-			if (std::regex_match(line, std::regex("(param:)(.*)"))){
-				std::string param;
-				param = line.substr(6);
-				std::cout << "-> Param found : " << param << '\n';
-
-				if (std::regex_match(param, std::regex("(name=\")(.*)(\")"))){
-					param = param.substr(6, param.length() - 7);
-					std::cout << "-> Name found : " << param << '\n';
-					paramMapName = param;
-					readMapName = true;
-				}
-
-				if (std::regex_match(param, std::regex("(width=\")(.*)(\")"))){
-					param = param.substr(7, param.length() - 8);
-					std::cout << "-> Width found : " << param << '\n';
-					paramMapWidth = std::stoi(param);
-					readMapWidth = true;
-				}
-
-				if (std::regex_match(param, std::regex("(height=\")(.*)(\")"))){
-					param = param.substr(8, param.length() - 9);
-					std::cout << "-> Height found : " << param << '\n';
-					paramMapHeight = std::stoi(param);
-					readMapHeight = true;
-				}
-			}
-
-			
-			if (readMapName && readMapWidth && readMapHeight){
-				// Check for labels
-				if (std::regex_match(line, std::regex("(label:)(.*)"))){
-					std::string label;
-					label = line.substr(6);
-					std::cout << "-> Label found : " << label << '\n';
-
-					if (std::regex_match(label, std::regex("(MAPSTART)"))){
-						readingMapLayout = true;
-						continue;
-						std::cout << "-> MAPSTART found : " << '\n';
-					}
-
-					if (std::regex_match(label, std::regex("(MAPEND)"))){
-						readingMapLayout = false;
-						readMapLayout = true;
-						continue;
-						std::cout << "-> MAPSTART found" << '\n';
-					}
-				}
-			}
-
-			
-			if (readingMapLayout) {
-				std::cout << "Map row : " << line << '\n';
-				std::string number = "";
-				for (int i = 0; i < line.length(); i++){
-					if (line[i] == ','){
-						if (number != ""){
-							mapLayout.push_back(std::stoi(number));
-							//std::cout << "Map ID : " << number << std::endl;
-							number = "";
-						}
-					}else{
-						number += line[i];
-					}
-				}
-			}
-		}
-		myfile.close();
-
-		
-		// Apply parameters
-		worldMap = mapLayout;
-		worldMapWidth = paramMapWidth;
-		worldMapHeight = paramMapHeight;
-		worldMapName = paramMapName;
-
-		std::cout << "============================" << std::endl;
-		std::cout << "Map : " << worldMapName << std::endl;
-		std::cout << "Width : " << worldMapWidth << "   Height : " << worldMapHeight << std::endl;
-		std::cout << "============================" << std::endl;
-
-
-	}
-	else std::cout << "Unable to open file";
-}
-
-
-void SaveMap(std::string mapName){
-	
-	std::ofstream myfile(mapName);
-	if (myfile.is_open())
-	{
-		myfile << "param:name=\"" << worldMapName << "\"" << std::endl;
-		myfile << "param:width=\"" << std::to_string(worldMapWidth) << "\"" << std::endl;
-		myfile << "param:height=\"" << std::to_string(worldMapHeight) << "\"" << std::endl;
-
-		myfile << "label:MAPSTART" << std::endl;
-
-		for (int i = 0; i < worldMapHeight; i++) {
-			for (int j = 0; j < worldMapWidth; j++) {
-				myfile << worldMap[i * worldMapWidth + j] << ",";
-			}
-			myfile << std::endl;
-		}
-
-		myfile << "label:MAPEND" << std::endl;
-
-		myfile.close();
-
-		std::cout << "Map \"" << worldMapName << "\" saved : " << mapName << std::endl; 
-	}
-	else std::cout << "Unable to open file";
-
-}
-
-
-
-
-
-struct Weapon {
-	float damage;
-	float fireRate;
-
-	bool onPlayer;
-	int weaponState; // for changing sprites ( 0 - idle, 1 - shoot, 2 - back to idle )
-
-	int currentAmmo;
-	int maxAmmo;
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//sort algorithm
-//sort the sprites based on distance
-void sortSprites(int* order, float* dist, int amount)
-{
-	std::vector<std::pair<float, int>> sprites(amount);
-	for (int i = 0; i < amount; i++) {
-		sprites[i].first = dist[i];
-		sprites[i].second = order[i];
-	}
-	std::sort(sprites.begin(), sprites.end());
-	// restore in reverse order to go from farthest to nearest
-	for (int i = 0; i < amount; i++) {
-		dist[i] = sprites[amount - i - 1].first;
-		order[i] = sprites[amount - i - 1].second;
-	}
-}
-
-
-
-
-
-
-
-
+//===============================================================================================================================
+// ENGINE 
+//===============================================================================================================================
 
 
 
@@ -384,6 +176,11 @@ public:
 		// Name you application
 		sAppName = "RaycastEngine";
 	}
+
+
+	enum GameState { STATE_GAMEPLAY, STATE_MENU, STATE_EDITOR };
+	GameState gameState;
+
 
 	// Assets ---------------------------------------
 
@@ -434,6 +231,9 @@ public:
 
 
 
+	bool showCursor = false;
+
+
 
 
 	std::string infoLog0 = "";
@@ -448,6 +248,461 @@ public:
 
 
 
+
+
+
+
+	//===============================================================================================================================
+	// MAP
+	//===============================================================================================================================
+
+
+
+	uint32_t newId;
+
+
+
+
+	std::string worldMapName;
+
+	int worldMapWidth;
+	int worldMapHeight;
+
+	std::vector<int> worldMap;
+
+
+
+
+
+
+	void LoadMap(std::string mapName) {
+
+		// Clear arrays
+		enemiesArray.clear();
+		decorationsArray.clear();
+		itemsArray.clear();
+		thingsArray.clear();
+
+
+
+		// Starting with id = 1
+		newId = 1; // 0 is reserved !!!
+
+
+		std::string line;
+		std::ifstream myfile(mapName);
+
+
+		bool readMapName = false;
+		std::string paramMapName = "";
+
+		bool readMapWidth = false;
+		int paramMapWidth = 0;
+
+		bool readMapHeight = false;
+		int paramMapHeight = 0;
+
+		bool readingMapLayout = false;
+		bool readMapLayout = false;
+		std::vector<int> mapLayout;
+
+
+		std::vector<Enemy> readEnemyArray;
+
+
+		if (myfile.is_open())
+		{
+			while (std::getline(myfile, line))
+			{
+
+				// Check for parameters ---------------------------------
+
+				if (std::regex_match(line, std::regex("(param:)(.*)"))) {
+					std::string param;
+					param = line.substr(6);
+					std::cout << "-> Param found : " << param << '\n';
+
+					if (std::regex_match(param, std::regex("(name=\")(.*)(\")"))) {
+						param = param.substr(6, param.length() - 7);
+						std::cout << "-> Name found : " << param << '\n';
+						paramMapName = param;
+						readMapName = true;
+					}
+
+					if (std::regex_match(param, std::regex("(width=\")(.*)(\")"))) {
+						param = param.substr(7, param.length() - 8);
+						std::cout << "-> Width found : " << param << '\n';
+						paramMapWidth = std::stoi(param);
+						readMapWidth = true;
+					}
+
+					if (std::regex_match(param, std::regex("(height=\")(.*)(\")"))) {
+						param = param.substr(8, param.length() - 9);
+						std::cout << "-> Height found : " << param << '\n';
+						paramMapHeight = std::stoi(param);
+						readMapHeight = true;
+					}
+				}
+
+				// Check for labels ---------------------------------
+
+				if (readMapName && readMapWidth && readMapHeight) {
+					if (std::regex_match(line, std::regex("(label:)(.*)"))) {
+						std::string label;
+						label = line.substr(6);
+						std::cout << "-> Label found : " << label << '\n';
+
+						if (std::regex_match(label, std::regex("(MAPSTART)"))) {
+							readingMapLayout = true;
+							continue;
+							std::cout << "-> MAPSTART found : " << '\n';
+						}
+
+						if (std::regex_match(label, std::regex("(MAPEND)"))) {
+							readingMapLayout = false;
+							readMapLayout = true;
+							continue;
+							std::cout << "-> MAPSTART found" << '\n';
+						}
+					}
+				}
+
+
+				// Reading map ---------------------------------
+
+				if (readingMapLayout) {
+					std::cout << "Map row : " << line << '\n';
+					std::string number = "";
+					for (int i = 0; i < line.length(); i++) {
+						if (line[i] == ',') {
+							if (number != "") {
+								mapLayout.push_back(std::stoi(number));
+								//std::cout << "Map ID : " << number << std::endl;
+								number = "";
+							}
+						}
+						else {
+							number += line[i];
+						}
+					}
+				}
+
+				// Reading map objects ---------------------------------
+
+				if (readMapLayout) {
+
+					// Enemies ---------------------------------
+
+					if (std::regex_match(line, std::regex("(enemy:)(.*)"))) {
+						std::string enemy;
+						enemy = line.substr(6);
+						std::cout << "-> Enemy found : " << enemy << '\n';
+
+
+						int readType = -1;
+						olc::vf2d readPosition{ -1, -1 };
+
+						std::smatch match;
+
+
+
+						// Type
+						std::regex_search(enemy.cbegin(), enemy.cend(), match, std::regex("(type=\")([0-9]*)(\":)"));
+						std::string foundType = match.str();
+						if (foundType != "") {
+							foundType = foundType.substr(0, foundType.length() - 1); // remove ":" in the end
+							//std::cout << "-> Type found : " << foundType << '\n';
+							readType = std::stoi(foundType.substr(6, foundType.length() - 7));
+							std::cout << "-> Type read : " << readType << '\n';
+						} else {
+							std::cout << "-> ERROR : Enemy type reading fail" << std::endl;
+						}
+
+						// Position
+						std::regex_search(enemy.cbegin(), enemy.cend(), match, std::regex("(position=\")(.*)(\":)"));
+						std::string foundPosition = match.str();
+						if (foundPosition != "") 
+						{
+							foundPosition = foundPosition.substr(0, foundPosition.length() - 1); // remove ":" in the end
+							//std::cout << "-> Position found : " << foundPosition << '\n';
+							foundPosition = foundPosition.substr(10, foundPosition.length() - 11);
+							//std::cout << "-> Position read : " << foundPosition << '\n';
+
+							bool readingX = true;
+							std::string posX = "";
+							std::string posY = "";
+
+							// Parcing floats
+							for (int i = 0; i < foundPosition.length(); i++) {				
+								if (!readingX) {
+									posY += foundPosition[i];
+								}
+
+								if (readingX && foundPosition[i] != ',') {
+									posX += foundPosition[i];
+								}
+								else {
+									readingX = false;
+								}
+							}
+							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
+
+							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+
+							std::cout << "-> Position read V : " << readPosition << '\n';
+						} else {
+							std::cout << "-> ERROR : Enemy position reading fail" << std::endl;
+						}
+
+						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
+							Enemy newEnemy = Enemy(this, newId, readType, readPosition);
+							enemiesArray.push_back(newEnemy); newId++;
+						} else {
+							std::cout << "Enemy reading fail" << std::endl;
+						}
+
+					}
+
+
+
+
+					// Decorations ---------------------------------
+
+					if (std::regex_match(line, std::regex("(decoration:)(.*)"))) {
+						std::string decoration;
+						decoration = line.substr(11);
+						std::cout << "-> Decoration found : " << decoration << '\n';
+
+
+						int readType = -1;
+						olc::vf2d readPosition{ -1, -1 };
+
+						std::smatch match;
+
+
+
+						// Type
+						std::regex_search(decoration.cbegin(), decoration.cend(), match, std::regex("(type=\")([0-9]*)(\":)"));
+						std::string foundType = match.str();
+						if (foundType != "") {
+							foundType = foundType.substr(0, foundType.length() - 1); // remove ":" in the end
+							//std::cout << "-> Type found : " << foundType << '\n';
+							readType = std::stoi(foundType.substr(6, foundType.length() - 7));
+							std::cout << "-> Type read : " << readType << '\n';
+						} else {
+							std::cout << "-> ERROR : Decoration type reading fail" << std::endl;
+						}
+
+						// Position
+						std::regex_search(decoration.cbegin(), decoration.cend(), match, std::regex("(position=\")(.*)(\":)"));
+						std::string foundPosition = match.str();
+						if (foundPosition != "")
+						{
+							foundPosition = foundPosition.substr(0, foundPosition.length() - 1); // remove ":" in the end
+							//std::cout << "-> Position found : " << foundPosition << '\n';
+							foundPosition = foundPosition.substr(10, foundPosition.length() - 11);
+							//std::cout << "-> Position read : " << foundPosition << '\n';
+
+							bool readingX = true;
+							std::string posX = "";
+							std::string posY = "";
+
+							// Parcing floats
+							for (int i = 0; i < foundPosition.length(); i++) {
+								if (!readingX) {
+									posY += foundPosition[i];
+								}
+
+								if (readingX && foundPosition[i] != ',') {
+									posX += foundPosition[i];
+								}
+								else {
+									readingX = false;
+								}
+							}
+							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
+
+							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+
+							std::cout << "-> Position read V : " << readPosition << '\n';
+						} else {
+							std::cout << "-> ERROR : Decoration position reading fail" << std::endl;
+						}
+
+
+						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
+							Decoration newDecoration = Decoration(this, newId, readType, readPosition);
+							decorationsArray.push_back(newDecoration); newId++;
+						} else {
+							std::cout << "-> ERROR : Decoration reading fail" << std::endl;
+						}
+					}
+
+
+
+
+
+					// Items ---------------------------------
+
+					if (std::regex_match(line, std::regex("(item:)(.*)"))) {
+						std::string item;
+						item = line.substr(5);
+						std::cout << "-> Item found : " << item << '\n';
+
+
+						int readType = -1;
+						olc::vf2d readPosition{ -1, -1 };
+
+						std::smatch match;
+
+
+
+						// Type
+						std::regex_search(item.cbegin(), item.cend(), match, std::regex("(type=\")([0-9]*)(\":)"));
+						std::string foundType = match.str();
+						if (foundType != "") {
+							foundType = foundType.substr(0, foundType.length() - 1); // remove ":" in the end
+							//std::cout << "-> Type found : " << foundType << '\n';
+							readType = std::stoi(foundType.substr(6, foundType.length() - 7));
+							std::cout << "-> Type read : " << readType << '\n';
+						}
+						else {
+							std::cout << "-> ERROR : Item type reading fail" << std::endl;
+						}
+
+						// Position
+						std::regex_search(item.cbegin(), item.cend(), match, std::regex("(position=\")(.*)(\":)"));
+						std::string foundPosition = match.str();
+						if (foundPosition != "")
+						{
+							foundPosition = foundPosition.substr(0, foundPosition.length() - 1); // remove ":" in the end
+							//std::cout << "-> Position found : " << foundPosition << '\n';
+							foundPosition = foundPosition.substr(10, foundPosition.length() - 11);
+							//std::cout << "-> Position read : " << foundPosition << '\n';
+
+							bool readingX = true;
+							std::string posX = "";
+							std::string posY = "";
+
+							// Parcing floats
+							for (int i = 0; i < foundPosition.length(); i++) {
+								if (!readingX) {
+									posY += foundPosition[i];
+								}
+
+								if (readingX && foundPosition[i] != ',') {
+									posX += foundPosition[i];
+								}
+								else {
+									readingX = false;
+								}
+							}
+							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
+
+							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+
+							std::cout << "-> Position read V : " << readPosition << '\n';
+						}
+						else {
+							std::cout << "-> ERROR : Item position reading fail" << std::endl;
+						}
+
+
+						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
+							Item newItem = Item(this, newId, readType, readPosition);
+							itemsArray.push_back(newItem); newId++;
+						}
+						else {
+							std::cout << "-> ERROR : Item reading fail" << std::endl;
+						}
+					}
+
+
+				}
+
+
+			}
+			myfile.close();
+
+
+			// Apply parameters
+			worldMap = mapLayout;
+			worldMapWidth = paramMapWidth;
+			worldMapHeight = paramMapHeight;
+			worldMapName = paramMapName;
+
+			std::cout << "============================" << std::endl;
+			std::cout << "Map : " << worldMapName << std::endl;
+			std::cout << "Width : " << worldMapWidth << "   Height : " << worldMapHeight << std::endl;
+			std::cout << "============================" << std::endl;
+
+
+		}
+		else std::cout << "Unable to open file";
+	}
+
+
+	void SaveMap(std::string mapName) {
+
+		std::ofstream myfile(mapName);
+		if (myfile.is_open())
+		{
+			myfile << "param:name=\"" << worldMapName << "\"" << std::endl;
+			myfile << "param:width=\"" << std::to_string(worldMapWidth) << "\"" << std::endl;
+			myfile << "param:height=\"" << std::to_string(worldMapHeight) << "\"" << std::endl;
+
+			myfile << "label:MAPSTART" << std::endl;
+
+			for (int i = 0; i < worldMapHeight; i++) {
+				for (int j = 0; j < worldMapWidth; j++) {
+					myfile << worldMap[i * worldMapWidth + j] << ",";
+				}
+				myfile << std::endl;
+			}
+
+			myfile << "label:MAPEND" << std::endl;
+
+			for (int i = 0; i < enemiesArray.size(); i++) {
+				myfile << "enemy:type=\"" << enemiesArray[i].texture << "\":position=\"" << enemiesArray[i].position.x << "," << enemiesArray[i].position.y << "\":" << std::endl;
+			}
+
+			for (int i = 0; i < decorationsArray.size(); i++) {
+				myfile << "decoration:type=\"" << decorationsArray[i].texture << "\":position=\"" << decorationsArray[i].position.x << "," << decorationsArray[i].position.y << "\":" << std::endl;
+			}
+
+			for (int i = 0; i < itemsArray.size(); i++) {
+				myfile << "item:type=\"" << itemsArray[i].texture << "\":position=\"" << itemsArray[i].position.x << "," << itemsArray[i].position.y << "\":" << std::endl;
+			}
+
+
+			myfile.close();
+
+			std::cout << "Map \"" << worldMapName << "\" saved : " << mapName << std::endl;
+		}
+		else std::cout << "Unable to open file";
+
+	}
+
+
+
+
+
+	//===============================================================================================================================
+	// GAME OBJECTS
+	//===============================================================================================================================
+
+
+	struct Weapon {
+		float damage;
+		float fireRate;
+
+		bool onPlayer;
+		int weaponState; // for changing sprites ( 0 - idle, 1 - shoot, 2 - back to idle )
+
+		int currentAmmo;
+		int maxAmmo;
+	};
+
 	Weapon weapons[3] = {
 		// Pistol
 		{5.0, 0.2, true, 0, 40, 100},
@@ -458,8 +713,6 @@ public:
 	};
 
 
-
-	// Object classes ---------------------------
 
 
 	class Thing
@@ -486,7 +739,8 @@ public:
 		int thingType = 0; // 0 - decoration, 1 - enemy, 2 - item
 
 
-		Thing() {
+		Thing(RaycastEngine* engine) {
+			engineReference = engine;
 			id = 0;
 			thingType = 0;
 			texture = 0;
@@ -495,7 +749,8 @@ public:
 			enableCollision = true;
 			collisionSize = 0.5;
 		}
-		Thing(uint32_t globId, int type, int tex, olc::vf2d pos) {
+		Thing(RaycastEngine* engine, uint32_t globId, int type, int tex, olc::vf2d pos) {
+			engineReference = engine;
 			id = globId;
 			thingType = type;
 			texture = tex;
@@ -531,20 +786,19 @@ public:
 	};
 
 
-
 	class Enemy : public Thing {
 
 	public:
-		Enemy() : Thing() {
+		Enemy(RaycastEngine* engine) : Thing(engine) {
 			std::cout << "Created Enemy | ID : " << id << std::endl;
 		};
-		Enemy(uint32_t globId, int tex, olc::vf2d pos) : Thing(globId, 1 , tex, pos) {
+		Enemy(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 1 , tex, pos) {
 			std::cout << "Created Enemy, param | ID : " << id << std::endl;
 		}
 
 
 		Thing ToThing() {
-			Thing thing = Thing(id, thingType, texture, position);
+			Thing thing = Thing(engineReference, id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -625,11 +879,12 @@ public:
 				}
 
 
-				if (worldMap[int(position.y) * worldMapWidth + int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))] == false)
+				if (engineReference->worldMap[int(position.y) * engineReference->worldMapWidth + int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))] == false)
 					position.x += velocity.x * fElapsedTime * 600;
 
-				if (worldMap[int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5)) * worldMapWidth + int(position.x)] == false)
+				if (engineReference->worldMap[int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5)) * engineReference->worldMapWidth + int(position.x)] == false)
 					position.y += velocity.y * fElapsedTime * 600;
+
 
 				engineReference->UpdateThings();
 			}
@@ -658,21 +913,22 @@ public:
 	};
 
 
-
 	class Item : public Thing {
 
 	public:
 
-		Item() : Thing() {
+		Item(RaycastEngine* engine) : Thing(engine) {
 			std::cout << "Created Item | ID : " << id << std::endl;
 		};
-		Item(uint32_t globId, int tex, olc::vf2d pos) : Thing(globId, 2 ,tex, pos) {
+		Item(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 2 ,tex, pos) {
 			std::cout << "Created Item, param  | ID : " << id << std::endl;
+
+			enableCollision = false;
 		}
 
 
 		Thing ToThing() {
-			Thing thing = Thing(id, thingType, texture, position);
+			Thing thing = Thing(engineReference, id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -729,19 +985,23 @@ public:
 	};
 
 
-
 	class Decoration : public Thing {
 
 	public:
-		Decoration() : Thing() {
+		Decoration(RaycastEngine* engine) : Thing(engine) {
 			std::cout << "Created Decoration | ID : " << id << std::endl;
 		};
-		Decoration(uint32_t globId, int tex, olc::vf2d pos) : Thing(globId, 0, tex, pos) {
+		Decoration(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 0, tex, pos) {
 			std::cout << "Created Decoration, param | ID : " << id << std::endl;
+
+			// Disable collision for lamps
+			if (tex == 2) { 
+				enableCollision = false;
+			}
 		}
 
 		Thing ToThing() {
-			Thing thing = Thing(id, thingType, texture, position);
+			Thing thing = Thing(engineReference, id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -757,7 +1017,7 @@ public:
 
 	Enemy* GetEnemyByID(uint32_t id) {
 		//std::cout << "Getting enemy | ID:  " << id << std::endl;
-		for (int i = 0; i < enemiesArrayLength; i++) {
+		for (int i = 0; i < enemiesArray.size(); i++) {
 			if (enemiesArray[i].id == id) {
 				//std::cout << "Found enemy | ID:  " << id << std::endl;
 				return &enemiesArray[i];
@@ -847,10 +1107,10 @@ public:
 			}
 
 
-			if (worldMap[int(position.y) * worldMapWidth + int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.5))] == false)
+			if (engineReference->worldMap[int(position.y) * engineReference->worldMapWidth + int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.1))] == false)
 				position.x += playerVelocity.x * fElapsedTime * 600;
 
-			if (worldMap[int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.5)) * worldMapWidth + int(position.x)] == false)
+			if (engineReference->worldMap[int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.1)) * engineReference->worldMapWidth + int(position.x)] == false)
 				position.y += playerVelocity.y * fElapsedTime * 600;
 
 
@@ -911,11 +1171,11 @@ public:
 		void ShootRay(float angle) {
 
 			float rayDistance = engineReference->ShootCameraRay(angle);
-			engineReference->aimDist = std::to_string(rayDistance);
+			//engineReference->aimDist = std::to_string(rayDistance);
 
-			for (int i = 0; i < engineReference->thingsArrayLength; i++) {
+			for (int i = 0; i < engineReference->thingsArray.size(); i++) {
 
-				Thing* spriteToTest = &engineReference->thingsArray[engineReference->spriteOrder[engineReference->thingsArrayLength - 1 - i]];
+				Thing* spriteToTest = &engineReference->thingsArray[engineReference->spriteOrder[engineReference->thingsArray.size() - 1 - i]];
 
 				bool collide = spriteToTest->CheckRayCollision(position, direction, rayDistance);
 				if (collide)
@@ -946,23 +1206,62 @@ public:
 
 	Player player;
 
-	Thing* thingsArray;
-	int thingsArrayLength;
 
-	Enemy* enemiesArray;
-	int enemiesArrayLength;
+	std::vector<Thing> thingsArray;
 
-	Decoration* decorationsArray;
-	int decorationsArrayLength;
+	std::vector<Enemy> enemiesArray;
 
-	Item* itemsArray;
-	int itemsArrayLength;
+	std::vector<Decoration> decorationsArray;
+
+	std::vector<Item> itemsArray;
 
 
 
-	//arrays used to sort the sprites
-	int* spriteOrder;
-	float* spriteDistance;
+	void UpdateThings() {
+
+		for (int i = 0; i < thingsArray.size(); i++) {
+			
+			for (int d = 0; d < decorationsArray.size(); d++) {
+				if (thingsArray[i].id == decorationsArray[d].id) {
+					thingsArray[i] = decorationsArray[d].ToThing();
+					break;
+				}
+			}
+
+			for (int d = 0; d < itemsArray.size(); d++) {
+				if (thingsArray[i].id == itemsArray[d].id) {
+					thingsArray[i] = itemsArray[d].ToThing();
+					break;
+				}
+			}
+
+			for (int d = 0; d < enemiesArray.size(); d++) {
+				if (thingsArray[i].id == enemiesArray[d].id) {
+					thingsArray[i] = enemiesArray[d].ToThing();
+					break;
+				}
+			}
+		}
+
+		// ---- Old update (I dont know if it's will be working now) ----
+		/*
+		// Add decorations
+		for (int i = 0; i < decorationsArray.size(); i++) {
+			thingsArray[i] = decorationsArray[i].ToThing();
+		}
+		
+		// Add items
+		for (int i = decorationsArray.size(); i < decorationsArray.size() + itemsArray.size(); i++) {
+			thingsArray[i] = itemsArray[i - decorationsArray.size()].ToThing();
+		}
+		
+		// Add enemies
+		for (int i = decorationsArray.size() + itemsArray.size(); i < decorationsArray.size() + itemsArray.size() + enemiesArray.size(); i++) {
+			thingsArray[i] = enemiesArray[i - (decorationsArray.size() + itemsArray.size())].ToThing();
+		}
+		*/
+
+	}
 
 
 
@@ -970,19 +1269,11 @@ public:
 
 
 
+	//===============================================================================================================================
+	// ASSETS
+	//===============================================================================================================================
 
 
-
-
-
-
-
-
-
-
-
-
-	// Assets
 
 	void LoadSprite(olc::Sprite* sprite, std::string file) {
 		olc::rcode loadStatus = sprite->LoadFromFile(file);
@@ -992,7 +1283,7 @@ public:
 
 	void LoadAssets() {
 
-		olc::rcode loadStatus;
+		//olc::rcode loadStatus;
 
 		LoadSprite(&spriteCursor, "gfx/cursor.png");
 
@@ -1021,6 +1312,18 @@ public:
 
 		LoadSprite(&itemAmmo9mm, "gfx/itemAmmo9mm.png");
 		LoadSprite(&itemAmmoShells, "gfx/itemAmmoShells.png");
+
+
+		// Editor
+		LoadSprite(&spriteEditorPlay, "gfx/editorPlay.png");
+		LoadSprite(&spriteEditorSave, "gfx/editorSave.png");
+		LoadSprite(&spriteEditorLoad, "gfx/editorLoad.png");
+		LoadSprite(&spriteEditorSettings, "gfx/editorSettings.png");
+
+		LoadSprite(&spriteEditorToolWall, "gfx/editorToolWall.png");
+		LoadSprite(&spriteEditorToolItem, "gfx/editorToolItem.png");
+		LoadSprite(&spriteEditorToolDecor, "gfx/editorToolDecor.png");
+		LoadSprite(&spriteEditorToolEnemy, "gfx/editorToolEnemy.png");
 	}
 
 
@@ -1074,6 +1377,17 @@ public:
 	}
 
 
+
+	olc::Sprite spriteEditorPlay;
+	olc::Sprite spriteEditorSave;
+	olc::Sprite spriteEditorLoad;
+	olc::Sprite spriteEditorSettings;
+
+	olc::Sprite spriteEditorToolWall;
+	olc::Sprite spriteEditorToolItem;
+	olc::Sprite spriteEditorToolDecor;
+	olc::Sprite spriteEditorToolEnemy;
+
 	// Drawing stuff
 
 	olc::Pixel DarkColor(olc::Pixel color, float amount = 0.5) {
@@ -1104,7 +1418,9 @@ public:
 	}
 
 
+	//===============================================================================================================================
 	// UI
+	//===============================================================================================================================
 
 
 	class Button {
@@ -1120,6 +1436,9 @@ public:
 
 		bool enabled;
 
+		bool isPressed;
+		bool isHovered;
+
 		bool showBorder;
 		bool showBackground;
 
@@ -1131,7 +1450,9 @@ public:
 
 
 		std::string text;
+		std::string hoverText;
 		olc::Sprite* sprite;
+
 
 
 		Button(RaycastEngine* engine){
@@ -1140,7 +1461,9 @@ public:
 			width = 20;
 			height = 40;
 			enabled = true;
-			showBorder= true;
+			isPressed = false;
+			isHovered = false;
+			showBorder = true;
 			showBackground = true;
 			colorBorder = olc::GREY;
 			colorBackground = olc::BLACK;
@@ -1148,6 +1471,7 @@ public:
 			colorHovered = olc::YELLOW;
 			colorPressed = olc::DARK_YELLOW;
 			text = "BTN";
+			hoverText = "";
 			sprite = nullptr;
 		}
 
@@ -1157,6 +1481,8 @@ public:
 			width = w;
 			height = h;
 			enabled = true;
+			isPressed = false;
+			isHovered = false;
 			showBorder= true;
 			showBackground = true;
 			colorBorder = olc::GREY;
@@ -1165,6 +1491,7 @@ public:
 			colorHovered = olc::YELLOW;
 			colorPressed = olc::DARK_YELLOW;
 			text = txt;
+			hoverText = "";
 			sprite = nullptr;
 		}
 
@@ -1174,6 +1501,8 @@ public:
 			width = w;
 			height = h;
 			enabled = true;
+			isPressed = false;
+			isHovered = false;
 			showBorder = true;
 			showBackground = true;
 			colorBorder = olc::GREY;
@@ -1182,6 +1511,7 @@ public:
 			colorHovered = olc::YELLOW;
 			colorPressed = olc::DARK_YELLOW;
 			text = "";
+			hoverText = "";
 			sprite = img;
 		}
 
@@ -1192,7 +1522,8 @@ public:
 
 			// Check mouse input
 
-			bool isHovered = false;
+			isPressed = false;
+			isHovered = false;
 
 			olc::vi2d mousePos = olc::vi2d(engineReference->GetMouseX(), engineReference->GetMouseY());
 			if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
@@ -1200,17 +1531,21 @@ public:
 				isHovered = true;
 			}
 
+			if (isHovered && engineReference->GetMouse(0).bPressed) {
+				isPressed = true;
+			}
+
 
 			// Draw button
 
 			if (showBorder){
-				engineReference->DrawRect(position.x, position.y, width, height, colorBorder);
+				engineReference->DrawRect(position.x, position.y, width, height, colorBorder); // Border
 				if (showBackground){
-					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground);
+					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
 				}
 			}else{
 				if (showBackground){
-					engineReference->FillRect(position.x, position.y, width, height, colorBackground);
+					engineReference->FillRect(position.x, position.y, width, height, colorBackground); // Background
 				}
 			}
 
@@ -1229,13 +1564,13 @@ public:
 				
 				for (int smplX = 0; smplX < width - 2; smplX++) {
 					for (int smplY = 0; smplY < height - 2; smplY++) {
-						olc::Pixel color = sprite->GetPixel(int( sprite->width / (width - 2) * smplX), int( sprite->height / (height - 2) * smplY));
-						engineReference->Draw(smplX + position.x + 1, smplY + position.y + 1, color);
+						olc::Pixel color = sprite->GetPixel(int( (1.0 * sprite->width / (width - 2)) * smplX), int( (1.0 * sprite->height / (height - 2)) * smplY));
+						if (color != olc::CYAN) {
+							engineReference->Draw(smplX + position.x + 1, smplY + position.y + 1, color);
+						}
 					}
 				}
 			}
-
-
 
 
 
@@ -1245,8 +1580,158 @@ public:
 
 
 
+	void InfoLog(std::string text) {
+
+		infoEffectTimer = 0.07;
+
+		if (infoLogTimer0 <= infoLogTimer1 && infoLogTimer0 <= infoLogTimer2) {
+			infoLog0 = text; infoLogTimer0 = 3;
+			return;
+		}
+		if (infoLogTimer1 <= infoLogTimer0 && infoLogTimer1 <= infoLogTimer2) {
+			infoLog1 = text; infoLogTimer1 = 3;
+			return;
+		}
+		if (infoLogTimer2 <= infoLogTimer1 && infoLogTimer2 <= infoLogTimer0) {
+			infoLog2 = text; infoLogTimer2 = 3;
+			return;
+		}
+
+	}
+
+	void DrawPlayerUI(float fElapsedTime) {
+
+		// Draw weapon -----------------------------
+
+		DrawPartialSpriteColorTransparent
+		(
+			ScreenWidth() / 2 + 0 - sin(player.bobValue + 1.55) * 8,
+			ScreenHeight() - 110 - (abs(sin(player.bobValue)) * 8),
+			weapons[player.activeWeapon].weaponState * 128,
+			0,
+			128,
+			128,
+			GetWeaponSprite(player.activeWeapon),
+			olc::CYAN
+		);
 
 
+		// Draw crosshair -----------------------------
+
+		Draw(ScreenWidth() / 2, ScreenHeight() / 2, olc::WHITE);
+
+
+		// Draw player status -----------------------------
+
+		FillRect(5, 165, 60, 30, olc::BLACK);
+		DrawLine(4, 166, 4, 195, olc::YELLOW);
+		DrawLine(4, 195, 64, 195, olc::YELLOW);
+		DrawString(9, 161, "Health", olc::WHITE);
+		DrawString(11, 176, std::to_string(player.health), olc::VERY_DARK_YELLOW, 2);
+		DrawString(10, 175, std::to_string(player.health), olc::YELLOW, 2);
+
+		FillRect(255, 165, 60, 30, olc::BLACK);
+		DrawLine(315, 166, 315, 195, olc::YELLOW);
+		DrawLine(256, 195, 315, 195, olc::YELLOW);
+		DrawString(280, 161, "Ammo", olc::WHITE);
+		DrawString(266, 176, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::VERY_DARK_YELLOW, 2);
+		DrawString(265, 175, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::YELLOW, 2);
+
+		// Draw info logs -----------------------------
+
+
+		if (infoLogTimer0 > 0) {
+			infoLogTimer0 -= fElapsedTime;
+			DrawString(6, 6, infoLog0, olc::BLACK);
+			DrawString(5, 5, infoLog0, olc::YELLOW);
+		}
+		if (infoLogTimer1 > 0) {
+			infoLogTimer1 -= fElapsedTime;
+			DrawString(6, 16, infoLog1, olc::BLACK);
+			DrawString(5, 15, infoLog1, olc::YELLOW);
+		}
+		if (infoLogTimer2 > 0) {
+			infoLogTimer2 -= fElapsedTime;
+			DrawString(6, 26, infoLog2, olc::BLACK);
+			DrawString(5, 25, infoLog2, olc::YELLOW);
+		}
+
+
+		// Draw info effect -----------------------------
+
+		if (infoEffectTimer > 0) {
+			infoEffectTimer -= fElapsedTime;
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::DARK_YELLOW);
+		}
+
+	}
+
+
+	void DrawMenu() {
+
+		int menuItemSelected = -1;
+
+		if (GetMouseY() > 67 && GetMouseY() <= 87) {
+			menuItemSelected = 0;
+		}
+		if (GetMouseY() > 87 && GetMouseY() <= 107) {
+			menuItemSelected = 1;
+		}
+		if (GetMouseY() > 107 && GetMouseY() <= 127) {
+			menuItemSelected = 2;
+		}
+		if (GetMouseY() > 127 && GetMouseY() <= 147) {
+			menuItemSelected = 3;
+		}
+
+		DrawString(72, 27, "Pause", olc::VERY_DARK_YELLOW, 3);
+		DrawString(70, 25, "Pause", olc::YELLOW, 3);
+
+		DrawString(92, 67, "New game", olc::VERY_DARK_YELLOW, 2);
+		DrawString(90, 65, "New game", olc::YELLOW, 2);
+
+		DrawString(92, 87, "Load game", olc::VERY_DARK_YELLOW, 2);
+		DrawString(90, 85, "Load game", olc::YELLOW, 2);
+
+		DrawString(92, 107, "Save game", olc::VERY_DARK_YELLOW, 2);
+		DrawString(90, 105, "Save game", olc::YELLOW, 2);
+
+		DrawString(92, 127, "Exit", olc::VERY_DARK_YELLOW, 2);
+		DrawString(90, 125, "Exit", olc::YELLOW, 2);
+
+
+		if (menuItemSelected != -1) {
+			DrawString(72, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
+			DrawString(70, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+		}
+
+
+
+
+		if (GetMouse(0).bPressed) {
+			switch (menuItemSelected)
+			{
+			case 0:
+				OnUserCreate();
+				break;
+			case 1:
+				break;
+			case 2:
+				break;
+			case 3:
+				exit(0);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+
+
+	//===============================================================================================================================
+	// WORLD PHYSICS
+	//===============================================================================================================================
 
 
 	// For ray collision calculations
@@ -1357,7 +1842,30 @@ public:
 
 
 
+	//===============================================================================================================================
+	// RENDERING
+	//===============================================================================================================================
 
+	//arrays used to sort the sprites
+	int* spriteOrder;
+	float* spriteDistance;
+
+	//sort algorithm
+	//sort the sprites based on distance
+	void sortSprites(int* order, float* dist, int amount)
+	{
+		std::vector<std::pair<float, int>> sprites(amount);
+		for (int i = 0; i < amount; i++) {
+			sprites[i].first = dist[i];
+			sprites[i].second = order[i];
+		}
+		std::sort(sprites.begin(), sprites.end());
+		// restore in reverse order to go from farthest to nearest
+		for (int i = 0; i < amount; i++) {
+			dist[i] = sprites[amount - i - 1].first;
+			order[i] = sprites[amount - i - 1].second;
+		}
+	}
 
 
 	void RaycastRender() {
@@ -1548,15 +2056,15 @@ public:
 
 		//SPRITE CASTING
 		//sort sprites from far to close
-		for (int i = 0; i < thingsArrayLength; i++)
+		for (int i = 0; i < thingsArray.size(); i++)
 		{
 			spriteOrder[i] = i;
 			spriteDistance[i] = ((player.position.x - thingsArray[i].position.x) * (player.position.x - thingsArray[i].position.x) + (player.position.y - thingsArray[i].position.y) * (player.position.y - thingsArray[i].position.y)); //sqrt not taken, unneeded
 		}
-		sortSprites(spriteOrder, spriteDistance, thingsArrayLength);
+		sortSprites(spriteOrder, spriteDistance, thingsArray.size());
 
 		//after sorting the sprites, do the projection and draw them
-		for (int i = 0; i < thingsArrayLength; i++)
+		for (int i = 0; i < thingsArray.size(); i++)
 		{
 			if (thingsArray[spriteOrder[i]].enableRender) {
 
@@ -1644,9 +2152,14 @@ public:
 
 
 
+
+	//===============================================================================================================================
+	// INPUT
+	//===============================================================================================================================
+
 	void UserControls(float fElapsedTime) {
 
-		if (!isMenuOpen) {
+		if (!isMenuOpen && !isEditorOpened) {
 
 			// Clear inputs ---------------------------------------------------------
 
@@ -1736,13 +2249,15 @@ public:
 		if (IsFocused() && !isMenuOpen && !isEditorOpened) {
 			if (GetWindowMouse().x != 0 && GetWindowMouse().y != 0) { // To prevent cursor set while dragging window
 
-				float deltaMouseX = 2 * fElapsedTime * (GetWindowMouse().x - GetWindowSize().x / 2);
+				float deltaMouseX = 0.05 * (GetWindowMouse().x - GetWindowSize().x / 2) / (fElapsedTime / 0.016);
 				player.controlRotationVector += olc::vf2d(deltaMouseX, 0);
 				SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2);
 			}
 		}
 		else if (!IsFocused()){
 			isMenuOpen = true;
+			showCursor = true;
+			gameState = STATE_MENU;
 		}
 
 
@@ -1751,6 +2266,11 @@ public:
 		if (GetKey(olc::Key::ESCAPE).bPressed)
 		{
 			isMenuOpen = !isMenuOpen;
+			showCursor = isMenuOpen;
+			isMenuOpen ? gameState = STATE_MENU : gameState = STATE_GAMEPLAY;
+
+			isEditorOpened = false;
+
 			SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2); // Return cursor to center
 		}
 
@@ -1759,6 +2279,11 @@ public:
 		if (GetKey(olc::Key::M).bPressed)
 		{
 			isEditorOpened = !isEditorOpened;
+			showCursor = isEditorOpened;
+			isEditorOpened ? gameState = STATE_EDITOR : gameState = STATE_GAMEPLAY;
+
+			isMenuOpen = false;
+			
 			SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2); // Return cursor to center
 		}
 
@@ -1769,150 +2294,423 @@ public:
 
 
 
-	void InfoLog(std::string text) {
+	//===============================================================================================================================
+	// MAP EDITOR 
+	//===============================================================================================================================
 
-		infoEffectTimer = 0.07;
-
-		if (infoLogTimer0 <= infoLogTimer1 && infoLogTimer0 <= infoLogTimer2) {
-			infoLog0 = text; infoLogTimer0 = 3;
-			return;
-		}
-		if (infoLogTimer1 <= infoLogTimer0 && infoLogTimer1 <= infoLogTimer2) {
-			infoLog1 = text; infoLogTimer1 = 3;
-			return;
-		}
-		if (infoLogTimer2 <= infoLogTimer1 && infoLogTimer2 <= infoLogTimer0) {
-			infoLog2 = text; infoLogTimer2 = 3;
-			return;
-		}
-
-	}
-
-	void DrawUI(float fElapsedTime) {
-
-		// Draw weapon -----------------------------
-
-		DrawPartialSpriteColorTransparent
-		(
-			ScreenWidth() / 2 + 0 - sin(player.bobValue + 1.55) * 8,
-			ScreenHeight() - 110 - (abs(sin(player.bobValue)) * 8),
-			weapons[player.activeWeapon].weaponState * 128,
-			0,
-			128,
-			128,
-			GetWeaponSprite(player.activeWeapon),
-			olc::CYAN
-		);
-
-
-		// Draw crosshair -----------------------------
-
-		Draw(ScreenWidth() / 2, ScreenHeight() / 2, olc::WHITE);
-		
-
-		// Draw player status -----------------------------
-
-		FillRect(5, 165,  60, 30, olc::BLACK );
-		DrawLine(4, 166, 4, 195, olc::YELLOW);
-		DrawLine(4, 195, 64, 195, olc::YELLOW);
-		DrawString(9, 161, "Health", olc::WHITE);
-		DrawString(11, 176, std::to_string(player.health), olc::VERY_DARK_YELLOW, 2);
-		DrawString(10, 175, std::to_string(player.health), olc::YELLOW, 2);
-
-		FillRect(255, 165, 60, 30, olc::BLACK );
-		DrawLine(315, 166, 315, 195, olc::YELLOW);
-		DrawLine(256, 195, 315, 195, olc::YELLOW);
-		DrawString(280, 161, "Ammo", olc::WHITE);
-		DrawString(266, 176, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::VERY_DARK_YELLOW, 2);
-		DrawString(265, 175, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::YELLOW, 2);
-
-		// Draw info logs -----------------------------
-
-		
-		if (infoLogTimer0 > 0) {
-			infoLogTimer0 -= fElapsedTime;
-			DrawString(6, 6, infoLog0, olc::BLACK);
-			DrawString(5, 5, infoLog0, olc::YELLOW);
-		}
-		if (infoLogTimer1 > 0) {
-			infoLogTimer1 -= fElapsedTime;
-			DrawString(6, 16, infoLog1, olc::BLACK);
-			DrawString(5, 15, infoLog1, olc::YELLOW);
-		}
-		if (infoLogTimer2 > 0) {
-			infoLogTimer2 -= fElapsedTime;
-			DrawString(6, 26, infoLog2, olc::BLACK);
-			DrawString(5, 25, infoLog2, olc::YELLOW);
-		}
-		
-
-		// Draw info effect -----------------------------
-
-		if (infoEffectTimer > 0) {
-			infoEffectTimer -= fElapsedTime;
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::DARK_YELLOW);
-		}
-
-	}
-
-
-
-
-	void UpdateThings() {
-
-		// Add decorations
-		for (int i = 0; i < decorationsArrayLength; i++) {
-			thingsArray[i] = decorationsArray[i].ToThing();
-		}
-
-		// Add items
-		for (int i = decorationsArrayLength; i < decorationsArrayLength + itemsArrayLength; i++) {
-			thingsArray[i] = itemsArray[i - decorationsArrayLength].ToThing();
-		}
-
-		// Add enemies
-		for (int i = decorationsArrayLength + itemsArrayLength; i < decorationsArrayLength + itemsArrayLength + enemiesArrayLength; i++) {
-			thingsArray[i] = enemiesArray[i - (decorationsArrayLength + itemsArrayLength)].ToThing();
-		}
-
-	}
-
-
+	bool isEditorOpened = false;
 
 
 	olc::vi2d gridShift {0,0};
 	olc::vi2d gridOrigin {0,0};
 
+	int editorCellSize = 20;
 	bool showGrid = true;
 
-	olc::vi2d selecterCell{0,0};
 
-	int editorCellSize = 20;
+	olc::vf2d selectedCell{ 0,0 };
+	
+	
 
-	bool mouseOnUI = false;
-
-	int selectedTexture = 1;
+	olc::vi2d mousePosPrev{ GetMouseX(), GetMouseY() };
 
 
-	void DrawEditor(float fElapsedTime) {
+
+	int toolSelected = 0;
+
+	int selectedToolWall = 0;
+	int selectedToolDecor = 0;
+	int selectedToolItem = 0;
+	int selectedToolEnemy = 0;
+
+
+	bool showToolSelection = false;
+	int toolSelectionPage = 0;
+
+
+
+
+	void Editor_SelectTool(int idx) {
+		switch (toolSelected)
+		{
+		case 0:
+			selectedToolWall = idx;
+			break;
+		case 1:
+			selectedToolDecor = idx;
+
+			break;
+		case 2:
+			selectedToolItem = idx;
+			break;
+		case 3:
+			selectedToolEnemy = idx;
+			break;
+		default:
+			break;
+		}
+	}
+
+
+	void Editor_DrawEditor(float fElapsedTime) {
+		
+		bool mouseOnUI = false;
+
+
 		
 
-		FillRect(0,0, ScreenWidth(), ScreenHeight(), olc::VERY_DARK_GREY );
+		// Background -----------------------
+
+		FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::VERY_DARK_GREY);
 
 
-		if (GetKey(olc::Key::LEFT).bHeld) {
+		// Draw map -----------------------
+
+		int sampleSize = editorCellSize - 1 + !showGrid; // Little optimisation
+
+		for (int i = 0; i < worldMapWidth; i++) {
+			for (int j = 0; j < worldMapHeight; j++) {
+				
+				if (worldMap[j * worldMapWidth + i] != 0){
+					for (int smplX = 0; smplX < sampleSize; smplX++) {
+						for (int smplY = 0; smplY < sampleSize; smplY++) {
+							olc::Pixel color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+							Draw(gridOrigin.x + 1 + smplX + i * editorCellSize, gridOrigin.y + 1 + smplY + j * editorCellSize, color);
+						}
+					}
+				}
+			}
+		}
+
+
+
+		// Grid -----------------------
+
+		if (showGrid) {
+			// Vertical lines
+			for (int i = 0; i < int(ScreenWidth() / editorCellSize) + 2; i++) {
+				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), olc::GREY);
+			}
+			// Horisontal lines
+			for (int j = 0; j < int(ScreenHeight() / editorCellSize) + 2; j++) {
+				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, olc::GREY);
+			}
+
+
+			// Draw grid origin
+			DrawLine(gridOrigin.x, 0, gridOrigin.x, ScreenHeight(), olc::YELLOW);
+			DrawLine(0, gridOrigin.y, ScreenWidth(), gridOrigin.y, olc::YELLOW);
+		}
+
+
+
+		// Draw objects -----------------------
+
+
+		// Draw Decorations
+
+		for (int d = 0; d < decorationsArray.size(); d++) {
+
+			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
+				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
+					olc::Pixel color = GetDecorationSprite(decorationsArray[d].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+					if (color != olc::BLACK && color != olc::CYAN) {
+						// decorationsArray[d].position.x - 0.5 in fact tells that i need to shift sprite half size
+						int pixelPosX = gridOrigin.x + 1 + smplX + (decorationsArray[d].position.x - 0.5) * editorCellSize;
+						int pixelPosY = gridOrigin.y + 1 + smplY + (decorationsArray[d].position.y - 0.5) * editorCellSize;
+						Draw(pixelPosX, pixelPosY, color);
+					}
+				}
+			}
+		}
+
+
+		// Draw Items
+
+		for (int i = 0; i < itemsArray.size(); i++) {
+
+			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
+				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
+					olc::Pixel color = GetItemSprite(itemsArray[i].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+					if (color != olc::BLACK && color != olc::CYAN) {
+						int pixelPosX = gridOrigin.x + 1 + smplX + (itemsArray[i].position.x - 0.5) * editorCellSize;
+						int pixelPosY = gridOrigin.y + 1 + smplY + (itemsArray[i].position.y - 0.5) * editorCellSize;
+						Draw(pixelPosX, pixelPosY, color);
+					}
+				}
+			}
+		}
+
+		// Draw Enemies
+
+		//for (int d = 0; d < decorationsArray.size(); d++) {
+		//
+		//	for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
+		//		for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
+		//			olc::Pixel color = GetDecorationSprite(decorationsArray[d].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+		//			if (color != olc::BLACK && color != olc::CYAN) {
+		//				int pixelPosX = gridOrigin.x + 1 + smplX + (decorationsArray[d].position.x - 0.5) * editorCellSize;
+		//				int pixelPosY = gridOrigin.y + 1 + smplY + (decorationsArray[d].position.y - 0.5) * editorCellSize;
+		//				Draw(pixelPosX, pixelPosY, color);
+		//			}
+		//		}
+		//	}
+		//}
+
+
+		// Cell selection ----------------------- 
+
+
+		selectedCell.x = (GetMouseX() - gridOrigin.x) / (editorCellSize * 1.0);
+		selectedCell.y = (GetMouseY() - gridOrigin.y) / (editorCellSize * 1.0);
+
+
+		if (toolSelected == 0 || toolSelected == 1) { // Wall or Decoration
+
+			selectedCell.x = floor(selectedCell.x);
+			selectedCell.y = floor(selectedCell.y);
+
+			// Rectangle
+			DrawRect(gridOrigin.x + selectedCell.x * editorCellSize, gridOrigin.y + selectedCell.y * editorCellSize, editorCellSize, editorCellSize, olc::RED);
+
+			std::string cellXText = std::to_string(selectedCell.x);
+			std::string cellYText = std::to_string(selectedCell.y);
+			std::string cellText = cellXText.substr(0, cellXText.length() - 5) + " " + cellYText.substr(0, cellYText.length() - 5);
+			DrawString(5, ScreenHeight() - 10, cellText);
+		}
+		else if (toolSelected == 2 || toolSelected == 3) { // Items or Enemy
+
+			selectedCell.x = (floor(selectedCell.x * 2)) / 2; // Round to the nearest 0.5 
+			selectedCell.y = (floor(selectedCell.y * 2)) / 2;
+
+			// Dot
+			FillRect(gridOrigin.x + selectedCell.x * editorCellSize - 3, gridOrigin.y + selectedCell.y * editorCellSize - 3, 7, 7, olc::RED);
+
+			std::string cellXText = std::to_string(selectedCell.x);
+			std::string cellYText = std::to_string(selectedCell.y);
+			std::string cellText = cellXText.substr(0, cellXText.length()-5) + " " + cellYText.substr(0, cellYText.length() - 5);
+			DrawString(5, ScreenHeight() - 10, cellText);
+		}
+
+
+
+
+		// UI -----------------------
+
+		std::string hoverText = "";
+
+
+		int debugMX = GetMouseX();
+		int debugMY = GetMouseY();
+		std::string debugMText = std::to_string(debugMX) + " " + std::to_string(debugMY);
+		DrawString(200, 180, debugMText, olc::WHITE);
+
+
+
+		FillRect(0,0,320,30,olc::BLACK);
+
+		// Save button
+		Button saveButton = Button(this, olc::vi2d(3, 3), 22, 22, &spriteEditorSave);
+		saveButton.showBorder = false;
+		saveButton.hoverText = "SAVE";
+		saveButton.Update();
+		if (saveButton.isHovered) { mouseOnUI = true; hoverText = saveButton.hoverText; }
+		if (saveButton.isPressed) SaveMap("maps/map02.txt");
+
+		// Load button
+		Button loadButton = Button(this, olc::vi2d(28, 3), 22, 22, &spriteEditorLoad);
+		loadButton.showBorder = false;
+		loadButton.hoverText = "LOAD";
+		loadButton.Update();
+		if (loadButton.isHovered) { mouseOnUI = true; hoverText = loadButton.hoverText; }
+		if (loadButton.isPressed) LoadMap("maps/map02.txt");
+
+		// Settings button
+		Button settingsButton = Button(this, olc::vi2d(53, 3), 22, 22, &spriteEditorSettings);
+		settingsButton.showBorder = false;
+		settingsButton.hoverText = "SETTINGS";
+		settingsButton.Update();
+		if (settingsButton.isHovered) { mouseOnUI = true; hoverText = settingsButton.hoverText; }
+		if (settingsButton.isPressed) LoadMap("maps/map02.txt");
+
+		// Play button
+		Button playButton = Button(this, olc::vi2d(279, 0), 30, 30, &spriteEditorPlay);
+		playButton.showBorder = false;
+		playButton.hoverText = "PLAY";
+		playButton.Update();
+		if (playButton.isHovered) { mouseOnUI = true; hoverText = playButton.hoverText; }
+		if (playButton.isPressed) LoadMap("maps/map02.txt");
+
+
+
+		// Tool Wall button
+		Button toolWallButton = Button(this, olc::vi2d(90, 5), 20, 20, &spriteEditorToolWall);
+		toolWallButton.showBorder = true;
+		toolWallButton.hoverText = "WALL";
+		toolWallButton.Update();
+		if (toolWallButton.isHovered) { mouseOnUI = true; hoverText = toolWallButton.hoverText; }
+		if (toolWallButton.isPressed) toolSelected = 0;
+
+		// Tool Decorations button
+		Button toolDecorButton = Button(this, olc::vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
+		toolDecorButton.showBorder = true;
+		toolDecorButton.hoverText = "DECOR";
+		toolDecorButton.Update();
+		if (toolDecorButton.isHovered) { mouseOnUI = true; hoverText = toolDecorButton.hoverText; }
+		if (toolDecorButton.isPressed) toolSelected = 1;
+
+		// Tool Items button
+		Button toolItemButton = Button(this, olc::vi2d(140, 5), 20, 20, &spriteEditorToolItem);
+		toolItemButton.showBorder = true;
+		toolItemButton.hoverText = "ITEM";
+		toolItemButton.Update();
+		if (toolItemButton.isHovered) { mouseOnUI = true; hoverText = toolItemButton.hoverText; }
+		if (toolItemButton.isPressed) toolSelected = 2;
+
+		// Tool Enemies button
+		Button toolEnemyButton = Button(this, olc::vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
+		toolEnemyButton.showBorder = true;
+		toolEnemyButton.hoverText = "ENEMY";
+		toolEnemyButton.Update();
+		if (toolEnemyButton.isHovered) { mouseOnUI = true; hoverText = toolEnemyButton.hoverText; }
+		if (toolEnemyButton.isPressed) toolSelected = 3;
+
+	
+		// Selected tool
+		DrawRect(88 + toolSelected * 25, 3, 24, 24, olc::YELLOW);
+		DrawRect(89 + toolSelected * 25, 4, 22, 22, olc::YELLOW);
+
+
+
+		// Tool
+		DrawString(200, 5, "TOOL:", olc::WHITE);
+
+		// Tool button
+		Button textureButton = Button(this);
+		switch (toolSelected)
+		{
+		case 0: // Wall
+			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
+			break;
+		case 1: // Decorations
+			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
+			break;
+		case 2: // Items
+			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetItemSprite(selectedToolItem));
+			break;
+		case 3: // Enemies
+			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetEnemySprite(selectedToolEnemy));
+			break;
+		}
+		textureButton.Update();
+		if (textureButton.isHovered) { mouseOnUI = true; }
+		if (textureButton.isPressed) showToolSelection = true;
+
+
+
+
+		// Tool selection -----------------------
+
+		if (showToolSelection) {
+
+			mouseOnUI = true; // To prevent placing and moving in background
+			
+			FillRect(40, 40, 273, 142, olc::BLACK); // Background
+			FillRect(195, 30, 75, 10, olc::BLACK); // Connection
+			DrawLine(195, 0, 195, 40, olc::YELLOW);
+			DrawLine(270, 0, 270, 40, olc::YELLOW);
+			DrawLine(40, 40, 195, 40, olc::YELLOW);
+			DrawLine(270, 40, 313, 40, olc::YELLOW);
+
+
+			for (int toolY = 0; toolY < 3; toolY++) {
+				for (int toolX = 0; toolX < 7; toolX++) {
+
+					if (toolSelected == 0 && (toolX + toolY * 7) > 8) break;
+					if (toolSelected == 1 && (toolX + toolY * 7) > 2) break;
+					if (toolSelected == 2 && (toolX + toolY * 7) > 2) break;
+					if (toolSelected == 3 && (toolX + toolY * 7) > 0) break;
+
+
+
+					Button selectToolButton = Button(this);
+					int textureIdx = 0;
+					switch (toolSelected)
+					{
+					case 0: // Wall
+						textureIdx = (toolX + toolY * 7) % 9;
+						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
+						break;
+					case 1: // Decorations
+						textureIdx = (toolX + toolY * 7) % 3;
+						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
+						break;
+					case 2: // Items
+						textureIdx = (toolX + toolY * 7) % 3;
+						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetItemSprite(textureIdx));
+						break;
+					case 3: // Enemies
+						textureIdx = (toolX + toolY * 7) % 1;
+						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetEnemySprite(textureIdx));
+						break;
+					default:
+						break;
+					}
+					selectToolButton.Update();
+					if (selectToolButton.isHovered) { mouseOnUI = true; }
+					if (selectToolButton.isPressed) { Editor_SelectTool(textureIdx); showToolSelection = false; }
+				}
+			}
+
+			// Ooooh, this is bad...... But i dont have other solution at this moment :(
+			if (!(GetMouseX() > 40 && GetMouseX() < 313 && GetMouseY() > 40 && GetMouseY() < 182) && !(GetMouseX() > 195 && GetMouseX() < 270 && GetMouseY() > 0 && GetMouseY() < 40) && GetMouse(0).bPressed) {
+				showToolSelection = false;
+			}
+
+		}
+
+
+
+
+		// Hovering text -----------------------
+
+		if (hoverText != "") {
+			DrawString(GetMouseX() - 1, GetMouseY() + 18, hoverText, olc::BLACK);
+			DrawString(GetMouseX() - 2, GetMouseY() + 17, hoverText, olc::WHITE);
+		}
+
+
+
+
+
+		// Editor controls -----------------------
+
+
+		// Mouse movement
+		if (GetMouse(1).bHeld && !mouseOnUI) {
+			gridShift.x = (gridShift.x + (GetMouseX() - mousePosPrev.x)) % 20;
+			gridOrigin.x = gridOrigin.x + (GetMouseX() - mousePosPrev.x);
+
+			gridShift.y = (gridShift.y + (GetMouseY() - mousePosPrev.y)) % 20;
+			gridOrigin.y = gridOrigin.y + (GetMouseY() - mousePosPrev.y);
+		}
+		mousePosPrev = olc::vi2d(GetMouseX(), GetMouseY());
+
+
+		// Arrow control
+		if (GetKey(olc::Key::LEFT).bHeld || GetKey(olc::Key::A).bHeld) {
 			gridShift.x = (gridShift.x + int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.x = gridOrigin.x + int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::RIGHT).bHeld) {
+		if (GetKey(olc::Key::RIGHT).bHeld || GetKey(olc::Key::D).bHeld) {
 			gridShift.x = (gridShift.x - int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.x = gridOrigin.x - int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::UP).bHeld) {
+		if (GetKey(olc::Key::UP).bHeld || GetKey(olc::Key::W).bHeld) {
 			gridShift.y = (gridShift.y + int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.y = gridOrigin.y + int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::DOWN).bHeld) {
+		if (GetKey(olc::Key::DOWN).bHeld || GetKey(olc::Key::S).bHeld) {
 			gridShift.y = (gridShift.y - int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.y = gridOrigin.y - int(10 * (fElapsedTime / 0.016));
 		}
@@ -1934,140 +2732,79 @@ public:
 
 
 
-		// Draw map
 
-		int sampleSize = editorCellSize - 1 + !showGrid;
-
-		for (int i = 0; i < worldMapWidth; i++) {
-			for (int j = 0; j < worldMapHeight; j++) {
-				
-				if (worldMap[j * worldMapWidth + i] != 0){
-					for (int smplX = 0; smplX < sampleSize; smplX++) {
-						for (int smplY = 0; smplY < sampleSize; smplY++) {
-							olc::Pixel color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
-							Draw(gridOrigin.x + 1 + smplX + i * editorCellSize, gridOrigin.y + 1 + smplY + j * editorCellSize, color);
-						}
-					}
-				}
-			}
-		}
-
-
-
-		// Grid
-		if (showGrid) {
-			// Vertical lines
-			for (int i = 0; i < int(ScreenWidth() / editorCellSize) + 2; i++) {
-				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), olc::GREY);
-			}
-			// Horisontal lines
-			for (int j = 0; j < int(ScreenHeight() / editorCellSize) + 2; j++) {
-				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, olc::GREY);
-			}
-
-
-			// Draw grid origin
-			DrawLine(gridOrigin.x, 0, gridOrigin.x, ScreenHeight(), olc::YELLOW);
-			DrawLine(0, gridOrigin.y, ScreenWidth(), gridOrigin.y, olc::YELLOW);
-		}
-
-
-
-
-		// Selection
-		DrawRect(gridOrigin.x + selecterCell.x * editorCellSize, gridOrigin.y + selecterCell.y * editorCellSize, editorCellSize, editorCellSize, olc::RED);
-
-
-		selecterCell.x = floor((GetMouseX() - gridOrigin.x) / (editorCellSize * 1.0));
-		selecterCell.y = floor((GetMouseY() - gridOrigin.y) / (editorCellSize * 1.0));
-
-		std::string cellText = std::to_string(selecterCell.x) + " " + std::to_string(selecterCell.y);
-		DrawString(5, ScreenHeight() - 10, cellText);
-
-
-
-		// UI	
-
-		// Save button
-		if (GetMouseX() > 0 && GetMouseX() < 42 && GetMouseY() > 0 && GetMouseY() < 17) {
-			mouseOnUI = true;
-
-			FillRect(1, 1, 41, 16, olc::BLACK);
-			DrawRect(0, 0, 42, 17, olc::YELLOW);
-			DrawString(5, 5, "SAVE", olc::YELLOW);
-
-			if (GetMouse(0).bPressed) {
-				SaveMap("maps/map02.txt");
-			}
-		}
-		else {
-			mouseOnUI = false;
-
-			FillRect(1, 1, 41, 16, olc::BLACK);
-			DrawRect(0, 0, 42, 17, olc::WHITE);
-			DrawString(5, 5, "SAVE", olc::WHITE);
-		}
-
-
-
-		if (GetMouseX() > 0 && GetMouseX() < 40 && GetMouseY() > 40 && GetMouseY() < 60) {
-			mouseOnUI = true;
-
-			for (int smplX = 0; smplX < 18; smplX++) {
-				for (int smplY = 0; smplY < 18; smplY++) {
-					olc::Pixel color = GetWallTexture(selectedTexture - 1)->GetPixel(int(64.0 / 18 * smplX), int(64.0 / 18 * smplY));
-					Draw(smplX + 1, smplY + 41, color);
-				}
-			}
-			DrawRect(0, 40, 20, 20, olc::YELLOW);
-
-			if (GetMouse(0).bPressed) {
-				selectedTexture = (selectedTexture + 1) % 9;
-			}
-		}
-		else {
-			mouseOnUI = false;
-
-			for (int smplX = 0; smplX < 18; smplX++) {
-				for (int smplY = 0; smplY < 18; smplY++) {
-					olc::Pixel color = GetWallTexture(selectedTexture - 1)->GetPixel(int(64.0 / 18 * smplX), int(64.0 / 18 * smplY));
-					Draw(smplX + 1, smplY + 41, color);
-				}
-			}
-			DrawRect(0, 40, 20, 20, olc::WHITE);
-		}
-
-
-
-		// Editing
+		// Place object
 
 		if (GetMouse(0).bPressed && !mouseOnUI) {
-			if (selecterCell.x >= 0 && selecterCell.y >= 0) { // Check map boundaries
-				worldMap[selecterCell.y * worldMapWidth + selecterCell.x] = selectedTexture;
+
+			if (selectedCell.x >= 0 && selectedCell.y >= 0) { // Check map boundaries
+
+
+				if (toolSelected == 0) { // Wall
+					worldMap[selectedCell.y * worldMapWidth + selectedCell.x] = selectedToolWall + 1;
+				}
+				else if (toolSelected == 1) { // Decor
+					Decoration newDecoration = Decoration(this, newId, selectedToolDecor, olc::vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
+					decorationsArray.push_back(newDecoration);
+					thingsArray.push_back(newDecoration.ToThing());
+					spriteOrder = new int[thingsArray.size()];
+					spriteDistance = new float[thingsArray.size()];
+				}
+				else if (toolSelected == 2) { // Item
+					Item newItem = Item(this, newId, selectedToolItem, olc::vf2d(selectedCell.x, selectedCell.y)); newId++;
+					itemsArray.push_back(newItem);
+					thingsArray.push_back(newItem.ToThing());
+					spriteOrder = new int[thingsArray.size()];
+					spriteDistance = new float[thingsArray.size()];
+				}
+				else if (toolSelected == 3) { // Enemy
+					Enemy newEnemy = Enemy(this, newId, selectedToolEnemy, olc::vf2d(selectedCell.x, selectedCell.y)); newId++;
+					enemiesArray.push_back(newEnemy);
+					thingsArray.push_back(newEnemy.ToThing());
+					spriteOrder = new int[thingsArray.size()];
+					spriteDistance = new float[thingsArray.size()];
+				}
+
+
+			}
+
+		}
+
+		// Erace
+
+		if (GetKey(olc::Key::E).bPressed && !mouseOnUI) {
+			if (selectedCell.x >= 0 && selectedCell.y >= 0) { // Check map boundaries
+
+
+				if (toolSelected == 0) { // Wall
+					worldMap[selectedCell.y * worldMapWidth + selectedCell.x] = 0;
+				}
+				else if (toolSelected == 1) { // Decor
+
+				}
+				else if (toolSelected == 2) { // Item
+
+				}
+				else if (toolSelected == 3) { // Enemy
+
+				}
 			}
 		}
-		if (GetMouse(1).bPressed && !mouseOnUI) {
-			if (selecterCell.x >= 0 && selecterCell.y >= 0) { // Check map boundaries
-				worldMap[selecterCell.y * worldMapWidth + selecterCell.x] = 0;
-			}
-		}
-
-
-
-
-
-
 
 	}
 
 
 
 
+	//===============================================================================================================================
+	// MAIN ENGINE FUNCTIONS
+	//===============================================================================================================================
+
 
 	bool OnUserCreate() override
 	{
 
-		LoadMap("maps/map01.txt");
+		LoadMap("maps/map02.txt");
 
 
 		// Initialisation ====================================================================
@@ -2090,7 +2827,7 @@ public:
 		// Create objects ====================================================================
 
 
-		uint32_t newId = 1; // 0 is reserved
+
 
 		// Create player -----------------------------
 
@@ -2099,131 +2836,41 @@ public:
 		player.direction = olc::vf2d{ -1, 0 };
 		player.viewPlane = olc::vf2d{ 0, -0.75 };
 
-		// Create enemies -----------------------------
 
-		enemiesArrayLength = 24;
-		enemiesArray = new Enemy[enemiesArrayLength];
-
-		enemiesArray[0] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[1] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[2] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[3] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-		enemiesArray[4] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[5] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[6] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[7] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-		enemiesArray[8] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[9] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[10] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[11] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-		enemiesArray[12] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[13] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[14] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[15] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-		enemiesArray[16] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[17] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[18] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[19] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-		enemiesArray[20] = Enemy(newId, 0, olc::vf2d(18.5, 15.5)); newId++;
-		enemiesArray[21] = Enemy(newId, 0, olc::vf2d(15.5, 10.5)); newId++;
-		enemiesArray[22] = Enemy(newId, 0, olc::vf2d(16.0, 15.0)); newId++;
-		enemiesArray[23] = Enemy(newId, 0, olc::vf2d(15.0, 18.5)); newId++;
-
-		// add engine reference, disable collision for lamps
-		for (int i = 0; i < enemiesArrayLength; i++)
-		{
-			enemiesArray[i].engineReference = this;
-		}
-
-
-		// Create decorations -----------------------------
-
-		decorationsArrayLength = 20;
-		decorationsArray = new Decoration[decorationsArrayLength];
-
-		// lamps
-		decorationsArray[0] = Decoration(newId, 2, olc::vf2d(15.5, 11.5)); newId++;
-		decorationsArray[1] = Decoration(newId, 2, olc::vf2d(20.5, 11.5)); newId++;
-		decorationsArray[2] = Decoration(newId, 2, olc::vf2d(18.5, 4.5 )); newId++;
-		decorationsArray[3] = Decoration(newId, 2, olc::vf2d(10.0, 4.5 )); newId++;
-		decorationsArray[4] = Decoration(newId, 2, olc::vf2d(10.0, 12.5)); newId++;
-		decorationsArray[5] = Decoration(newId, 2, olc::vf2d(3.5,  6.5 )); newId++;
-		decorationsArray[6] = Decoration(newId, 2, olc::vf2d(3.5,  20.5)); newId++;
-		decorationsArray[7] = Decoration(newId, 2, olc::vf2d(3.5,  14.5)); newId++;
-		decorationsArray[8] = Decoration(newId, 2, olc::vf2d(14.5, 20.5)); newId++;
-		// pillars
-		decorationsArray[9] = Decoration(newId, 1, olc::vf2d(18.5, 10.5)); newId++;
-		decorationsArray[10] = Decoration(newId, 1, olc::vf2d(18.5, 11.5)); newId++;
-		decorationsArray[11] = Decoration(newId, 1, olc::vf2d(18.5, 12.5)); newId++;
-		// barrels
-		decorationsArray[12] = Decoration(newId, 0, olc::vf2d(21.5, 1.5 )); newId++;
-		decorationsArray[13] = Decoration(newId, 0, olc::vf2d(15.5, 1.5 )); newId++;
-		decorationsArray[14] = Decoration(newId, 0, olc::vf2d(16.0, 1.8 )); newId++;
-		decorationsArray[15] = Decoration(newId, 0, olc::vf2d(16.2, 1.2 )); newId++;
-		decorationsArray[16] = Decoration(newId, 0, olc::vf2d(3.5,  2.5 )); newId++;
-		decorationsArray[17] = Decoration(newId, 0, olc::vf2d(9.5,  15.5)); newId++;
-		decorationsArray[18] = Decoration(newId, 0, olc::vf2d(10.0, 15.1)); newId++;
-		decorationsArray[19] = Decoration(newId, 0, olc::vf2d(10.5, 15.8)); newId++;
-
-
-		// add engine reference, disable collision for lamps
-		for (int i = 0; i < decorationsArrayLength; i++)
-		{
-			decorationsArray[i].engineReference = this;
-			if (decorationsArray[i].texture == 2) {
-				decorationsArray[i].enableCollision = false;
-			}
-		}
-
-
-		// Create items -----------------------------
-
-		itemsArrayLength = 10;
-		itemsArray = new Item[itemsArrayLength];
-
-		itemsArray[0] = Item(newId, 0, olc::vf2d(13.5, 11.5)); newId++;
-		itemsArray[1] = Item(newId, 0, olc::vf2d(20.5, 12.5)); newId++;
-		itemsArray[2] = Item(newId, 0, olc::vf2d(18.5, 8.5)); newId++;
-		itemsArray[3] = Item(newId, 0, olc::vf2d(12.0, 6.5)); newId++;
-		itemsArray[4] = Item(newId, 0, olc::vf2d(18.0, 15.5)); newId++;
-		
-		
-		itemsArray[5] = Item(newId, 1, olc::vf2d(11.5, 20.0)); newId++;
-		itemsArray[6] = Item(newId, 1, olc::vf2d(12.5, 20.0)); newId++;
-		itemsArray[7] = Item(newId, 1, olc::vf2d(13.5, 20.0)); newId++;
-		itemsArray[8] = Item(newId, 2, olc::vf2d(14.5, 20.0)); newId++;
-		itemsArray[9] = Item(newId, 2, olc::vf2d(15.5, 20.0)); newId++;
-
-
-		// add engine reference, disable collision
-		for (int i = 0; i < itemsArrayLength; i++)
-		{
-			itemsArray[i].engineReference = this;
-			itemsArray[i].enableCollision = false;
-		}
 
 
 		// Create things array -----------------------------
 
-		thingsArrayLength = decorationsArrayLength + itemsArrayLength + enemiesArrayLength;
-
-		spriteOrder = new int[thingsArrayLength];
-		spriteDistance = new float[thingsArrayLength];
-		thingsArray = new Thing[thingsArrayLength];
-
 		// Add decorations
-		for (int i = 0; i < decorationsArrayLength; i++) {
-			thingsArray[i] = decorationsArray[i].ToThing();
+		for (int i = 0; i < decorationsArray.size(); i++) {
+			thingsArray.push_back(decorationsArray[i].ToThing());
 		}
 		// Add items
-		for (int i = decorationsArrayLength; i < decorationsArrayLength + itemsArrayLength; i++) {
-			thingsArray[i] = itemsArray[i - decorationsArrayLength].ToThing();
+		for (int i = 0; i < itemsArray.size(); i++) {
+			thingsArray.push_back(itemsArray[i].ToThing());
 		}
 		// Add enemies
-		for (int i = decorationsArrayLength + itemsArrayLength; i < decorationsArrayLength + itemsArrayLength + enemiesArrayLength; i++) {
-			thingsArray[i] = enemiesArray[i - (decorationsArrayLength + itemsArrayLength)].ToThing();
+		for (int i = 0; i < enemiesArray.size(); i++) {
+			thingsArray.push_back(enemiesArray[i].ToThing());
 		}
 
+
+
+
+		spriteOrder = new int[thingsArray.size()];
+		spriteDistance = new float[thingsArray.size()];
+
+
+
+
+
+
+		// --- delete from vector fuction ---
+		// change places with last element
+		// pop_back()
+
+
+		gameState = STATE_GAMEPLAY;
 
 
 		return true;
@@ -2231,164 +2878,102 @@ public:
 
 
 
-	Button testButton = Button(this, olc::vi2d(50,50), 50,30, "Button");
-
-	bool isEditorOpened = false;
-
-
-	std::string aimDist;
-
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 
-		// Render ==============================================================================
+		// Game states ==============================================================================
 
-		if (!isEditorOpened) {
+
+		switch (gameState) {
+
+		case STATE_GAMEPLAY:
+
+			// Rendering
+			RaycastRender();
+			DrawPlayerUI(fElapsedTime);
+
+			// Player update
+			player.Update(fElapsedTime);
+
+			// Object updates
+			for (int i = 0; i < enemiesArray.size(); i++) {
+				enemiesArray[i].Update(fElapsedTime);
+			}
+			for (int i = 0; i < itemsArray.size(); i++) {
+				itemsArray[i].Update(fElapsedTime);
+			}
+
+			break;
+
+
+
+		case STATE_MENU:
 			
 			RaycastRender();
+			DrawPlayerUI(fElapsedTime);
 
-			DrawUI(fElapsedTime);
-
-		}else{
-
-			DrawEditor(fElapsedTime);
-
-			// Draw mouse cursor
-			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, olc::CYAN);
-
-
-		}
+			DrawMenu();
+			break;
 
 
 
-
-		// Menu ==============================================================================
-
-		if (isMenuOpen) {
-
-			
-
-			int menuItemSelected = -1;
-
-			if (GetMouseY() > 67 && GetMouseY() <= 87) {
-				menuItemSelected = 0;
-			}
-			if (GetMouseY() > 87 && GetMouseY() <= 107) {
-				menuItemSelected = 1;
-			}
-			if (GetMouseY() > 107 && GetMouseY() <= 127) {
-				menuItemSelected = 2;
-			}
-			if (GetMouseY() > 127 && GetMouseY() <= 147) {
-				menuItemSelected = 3;
-			}
-			
-			DrawString(72, 27, "Pause", olc::VERY_DARK_YELLOW, 3);
-			DrawString(70, 25, "Pause", olc::YELLOW, 3);
-
-			DrawString(92, 67, "New game", olc::VERY_DARK_YELLOW, 2);
-			DrawString(90, 65, "New game", olc::YELLOW, 2);
-
-			DrawString(92, 87, "Load game", olc::VERY_DARK_YELLOW, 2);
-			DrawString(90, 85, "Load game", olc::YELLOW, 2);
-
-			DrawString(92, 107, "Save game", olc::VERY_DARK_YELLOW, 2);
-			DrawString(90, 105, "Save game", olc::YELLOW, 2);
-
-			DrawString(92, 127, "Exit", olc::VERY_DARK_YELLOW, 2);
-			DrawString(90, 125, "Exit", olc::YELLOW, 2);
-
-
-			if (menuItemSelected != -1) {
-				DrawString(72, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(70, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
-			}
-
-
-			// Draw mouse cursor
-			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, olc::CYAN);
-
-
-			if (GetMouse(0).bPressed) {
-				switch (menuItemSelected)
-				{
-				case 0:
-					OnUserCreate();
-					break;
-				case 1:
-					break;
-				case 2:
-					break;
-				case 3:
-					exit(0);
-					break;
-				default:
-					break;
-				}
-			}
-
+		case STATE_EDITOR:
+			Editor_DrawEditor(fElapsedTime);
+			break;
 
 		}
+		
 
 
 		// Game logic ==============================================================================
 
 		UserControls(fElapsedTime);
 
-		if (!isMenuOpen && !isEditorOpened) {
-
-			// Player update
-
-			player.Update(fElapsedTime);
 
 
-			// Object updates
-
-			for (int i = 0; i < enemiesArrayLength; i++) {
-				enemiesArray[i].Update(fElapsedTime);
-			}
+		// UI ==============================================================================
 
 
-			for (int i = 0; i < itemsArrayLength; i++) {
-				itemsArray[i].Update(fElapsedTime);
-			}
-
+		// Draw mouse cursor
+		if (showCursor) {
+			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, olc::CYAN);
 		}
 
 
 
-
-
-		testButton.Update();
-
-
 		// Debug info ==============================================================================
 
-		//std::string text = "VEL : " + std::to_string(player.playerVelocity.x) + ", " + std::to_string(player.playerVelocity.y);
-		//DrawString(10, 10, text, olc::WHITE);
-		//
-		//text = "POS : " + std::to_string(player.position.x) + ", " + std::to_string(player.position.y);
-		//DrawString(10, 20, text, olc::WHITE);
-		//
-		//text = "MV : " + std::to_string(player.controlMoveVector.x) + ", " + std::to_string(player.controlMoveVector.y);
-		//DrawString(10, 30, text, olc::WHITE);
-		//
-		//text = "DIR : " + std::to_string(player.direction.x) + ", " + std::to_string(player.direction.y);
-		//DrawString(10, 50, text, olc::WHITE);
-		//
-		//
-		//DrawString(10, 60, aimDist, olc::WHITE);
-		//
-		//
-		//text = "SPRITES";
-		//DrawString(250, 10, text, olc::WHITE);
-		//for (int i = 0; i < thingsArrayLength; i++) {
-		//	text = std::to_string(thingsArray[spriteOrder[thingsArrayLength - 1 - i]].texture);
-		//	DrawString(300, 20+10*i, text, olc::WHITE);
-		//}
-		//
-		//text = "WS : " + std::to_string(weapons[player.activeWeapon].weaponState);
-		//DrawString(10, 70, text, olc::WHITE);
+		/*
+		std::string aimDist;
+
+		std::string text = "VEL : " + std::to_string(player.playerVelocity.x) + ", " + std::to_string(player.playerVelocity.y);
+		DrawString(10, 10, text, olc::WHITE);
+		
+		text = "POS : " + std::to_string(player.position.x) + ", " + std::to_string(player.position.y);
+		DrawString(10, 20, text, olc::WHITE);
+		
+		text = "MV : " + std::to_string(player.controlMoveVector.x) + ", " + std::to_string(player.controlMoveVector.y);
+		DrawString(10, 30, text, olc::WHITE);
+		
+		text = "DIR : " + std::to_string(player.direction.x) + ", " + std::to_string(player.direction.y);
+		DrawString(10, 50, text, olc::WHITE);
+		
+		
+		DrawString(10, 60, aimDist, olc::WHITE);
+		
+		
+		text = "SPRITES";
+		DrawString(250, 10, text, olc::WHITE);
+		for (int i = 0; i < thingsArrayLength; i++) {
+			text = std::to_string(thingsArray[spriteOrder[thingsArrayLength - 1 - i]].texture);
+			DrawString(300, 20+10*i, text, olc::WHITE);
+		}
+		
+		text = "WS : " + std::to_string(weapons[player.activeWeapon].weaponState);
+		DrawString(10, 70, text, olc::WHITE);
+		*/
+
+
 
 
 		// MIDI ==========================================================================================
@@ -2411,6 +2996,9 @@ public:
 
 
 
+//===============================================================================================================================
+// MAIN() 
+//===============================================================================================================================
 
 
 
@@ -2422,7 +3010,7 @@ int main()
 	ShowCursor(false);
 
 	RaycastEngine engine;
-	if (engine.Construct(320, 200, 2, 2, false, true))
+	if (engine.Construct(320, 200, 4, 4, false, false))
 		engine.Start();
 
 
