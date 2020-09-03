@@ -182,43 +182,7 @@ public:
 	GameState gameState;
 
 
-	// Assets ---------------------------------------
-
-	// UI
-	olc::Sprite spriteCursor;
-
-	// Walls
-	olc::Sprite spritesWall1;
-	olc::Sprite spritesWall2;
-	olc::Sprite spritesWall3;
-	olc::Sprite spritesWall4;
-	olc::Sprite spritesWall5;
-	olc::Sprite spritesWall6;
-	olc::Sprite spritesWall7;
-	olc::Sprite spritesWall8;
-
-	olc::Sprite spriteBarell;
-	olc::Sprite spritePillar;
-	olc::Sprite spriteLamp;
-	olc::Sprite spriteBat;
-
-
-
-	olc::Sprite spritesRobot1;
-
-
-	// Weapon sprites
-	olc::Sprite weaponPistol;
-	olc::Sprite weaponUzi;
-	olc::Sprite weaponShotgun;
-
-
-	// Item sprites
-	olc::Sprite spritesMedkit;
-	olc::Sprite itemAmmo9mm;
-	olc::Sprite itemAmmoShells;
-
-
+	
 
 	// Some internal stuff ---------------------------
 
@@ -1273,12 +1237,71 @@ public:
 	// ASSETS
 	//===============================================================================================================================
 
+	// Assets ---------------------------------------
+
+	// UI
+	olc::Sprite spriteCursor;
+
+	// Walls
+	olc::Sprite spritesWall1;
+	olc::Sprite spritesWall2;
+	olc::Sprite spritesWall3;
+	olc::Sprite spritesWall4;
+	olc::Sprite spritesWall5;
+	olc::Sprite spritesWall6;
+	olc::Sprite spritesWall7;
+	olc::Sprite spritesWall8;
+
+	olc::Sprite spriteBarell;
+	olc::Sprite spritePillar;
+	olc::Sprite spriteLamp;
+
+
+
+	olc::Sprite spritesRobot1;
+
+
+	// Weapon sprites
+	olc::Sprite weaponPistol;
+	olc::Sprite weaponUzi;
+	olc::Sprite weaponShotgun;
+
+
+	// Item sprites
+	olc::Sprite spritesMedkit;
+	olc::Sprite itemAmmo9mm;
+	olc::Sprite itemAmmoShells;
+
+
+
+	std::vector<olc::Sprite> itemIconSprites;
+
+
+
+	olc::Sprite SampleIconFromSprite(olc::Sprite* sprite, int32_t x, int32_t y, int32_t w, int32_t h){
+		std::cout << "SampleIconFromSprite" << std::endl;
+		olc::Sprite newIcon = olc::Sprite(w, h);
+
+		std::cout << "Sampling..." << std::endl;
+		for (int smplX = 0; smplX < w; smplX++) {
+			for (int smplY = 0; smplY < h; smplY++) {
+				olc::Pixel color = sprite->GetPixel(x + smplX, y + smplY);
+				//olc::Pixel color = sprite->GetPixel(int(1.0 * sprite->width / w * smplX), int(1.0 * sprite->height / h * smplY));
+				newIcon.SetPixel(smplX, smplY, color);
+			}
+		}
+
+		DrawSprite(olc::vi2d(100,100), &newIcon);
+
+		std::cout << "Return" << std::endl;
+		return(newIcon);
+	}
 
 
 	void LoadSprite(olc::Sprite* sprite, std::string file) {
 		olc::rcode loadStatus = sprite->LoadFromFile(file);
-		if (loadStatus == olc::FAIL) std::cout << "Sprite load failed : " << file << std::endl;
-		if (loadStatus == olc::NO_FILE) std::cout << "Sprite not found : " << file << std::endl;
+		if (loadStatus == olc::FAIL) { std::cout << "Sprite load failed : " << file << std::endl; return; }
+		if (loadStatus == olc::NO_FILE) { std::cout << "Sprite not found : " << file << std::endl; return; }
 	}
 
 	void LoadAssets() {
@@ -1300,9 +1323,8 @@ public:
 		LoadSprite(&spriteBarell, "gfx/barrel.png");
 		LoadSprite(&spritePillar, "gfx/pillar.png");
 		LoadSprite(&spriteLamp, "gfx/greenlight.png");
-		LoadSprite(&spriteBat, "gfx/bat.png");
 
-		LoadSprite(&spritesMedkit, "gfx/medkit.png");
+	
 
 		LoadSprite(&spritesRobot1, "gfx/robot1.png");
 
@@ -1310,8 +1332,13 @@ public:
 		LoadSprite(&weaponUzi, "gfx/weaponUzi.png");
 		LoadSprite(&weaponShotgun, "gfx/weaponShotgun.png");
 
+
+		LoadSprite(&spritesMedkit, "gfx/medkit.png");
+		itemIconSprites.push_back(SampleIconFromSprite(&spritesMedkit, 20, 39, 23, 23));
 		LoadSprite(&itemAmmo9mm, "gfx/itemAmmo9mm.png");
+		itemIconSprites.push_back(SampleIconFromSprite(&itemAmmo9mm, 20, 39, 23, 23));
 		LoadSprite(&itemAmmoShells, "gfx/itemAmmoShells.png");
+		itemIconSprites.push_back(SampleIconFromSprite(&itemAmmoShells, 20, 39, 23, 23));
 
 
 		// Editor
@@ -2431,7 +2458,8 @@ public:
 
 			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					olc::Pixel color = GetItemSprite(itemsArray[i].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+					//olc::Pixel color = itemIconSprites[itemsArray[i].texture].GetPixel(floor(24.0 / editorCellSize * smplX), floor(24.0 / editorCellSize * smplY));
+					olc::Pixel color = itemIconSprites[itemsArray[i].texture].GetPixel(smplX, smplY);
 					if (color != olc::BLACK && color != olc::CYAN) {
 						int pixelPosX = gridOrigin.x + 1 + smplX + (itemsArray[i].position.x - 0.5) * editorCellSize;
 						int pixelPosY = gridOrigin.y + 1 + smplY + (itemsArray[i].position.y - 0.5) * editorCellSize;
@@ -2647,7 +2675,8 @@ public:
 						break;
 					case 2: // Items
 						textureIdx = (toolX + toolY * 7) % 3;
-						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetItemSprite(textureIdx));
+						selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, &itemIconSprites[textureIdx]);
+						selectToolButton.colorBackground = olc::WHITE;
 						break;
 					case 3: // Enemies
 						textureIdx = (toolX + toolY * 7) % 1;
@@ -3010,7 +3039,7 @@ int main()
 	ShowCursor(false);
 
 	RaycastEngine engine;
-	if (engine.Construct(320, 200, 4, 4, false, false))
+	if (engine.Construct(320, 200, 3, 3, false, false))
 		engine.Start();
 
 

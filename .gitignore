@@ -1,0 +1,4 @@
+
+*.obj
+Build/Release/Temp/RaycastEngineGame.obj
+Build/Release/Temp/vc142.pdb
