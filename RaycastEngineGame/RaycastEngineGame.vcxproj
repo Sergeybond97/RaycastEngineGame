@@ -162,10 +162,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="c_decoration.cpp" />
+    <ClCompile Include="c_enemy.cpp" />
+    <ClCompile Include="c_item.cpp" />
+    <ClCompile Include="c_thing.cpp" />
     <ClCompile Include="minisdl_audio.c" />
+    <ClCompile Include="olcPixelGameEngine.cpp" />
     <ClCompile Include="RaycastEngineGame.cpp" />
+    <ClCompile Include="r_sprite.cpp" />
+    <ClCompile Include="t_imageLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="c_decoration.h" />
+    <ClInclude Include="c_enemy.h" />
+    <ClInclude Include="c_engine.h" />
+    <ClInclude Include="c_item.h" />
+    <ClInclude Include="c_thing.h" />
+    <ClInclude Include="c_vector.h" />
     <ClInclude Include="ik_ESoundEngineOptions.h" />
     <ClInclude Include="ik_ESoundOutputDrivers.h" />
     <ClInclude Include="ik_EStreamModes.h" />
@@ -187,10 +200,15 @@
     <ClInclude Include="ik_SAudioStreamFormat.h" />
     <ClInclude Include="ik_vec3d.h" />
     <ClInclude Include="irrKlang.h" />
+    <ClInclude Include="i_controls.h" />
     <ClInclude Include="minisdl_audio.h" />
     <ClInclude Include="olcPixelGameEngine.h" />
+    <ClInclude Include="r_color.h" />
+    <ClInclude Include="r_sprite.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="tml.h" />
     <ClInclude Include="tsf.h" />
+    <ClInclude Include="t_imageLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

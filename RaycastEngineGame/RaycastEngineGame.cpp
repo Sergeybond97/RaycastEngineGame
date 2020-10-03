@@ -1,8 +1,17 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-#define OLC_PGE_APPLICATION
+
 #include "olcPixelGameEngine.h"
+
+#include "c_vector.h"
+#include "r_color.h"
+#include "r_sprite.h"
+#include "t_imageLoader.h"
+#include "i_controls.h"
+
+#include "c_engine.h"
+#include "c_thing.h"
 
 
 #include <regex>
@@ -10,9 +19,32 @@
 #include <fstream>
 #include <filesystem>
 
+
+
+// FX =============================================================
+
 #include "irrKlang.h"
 
 #pragma comment(lib, "irrKlang.lib") // link with irrKlang.dll
+
+
+irrklang::ISoundEngine* soundEngine;
+
+
+void StartWAVEngine() {
+
+	// start the sound engine with default parameters
+	soundEngine = irrklang::createIrrKlangDevice();
+
+	if (!soundEngine)
+	{
+		printf("SOUND : Could not startup FX sound engine\n");
+	}
+
+	soundEngine->setSoundVolume(0.2);
+
+}
+
 
 
 // MIDI =============================================================
@@ -166,30 +198,153 @@ void StopMIDI() {
 	g_Msec = 0;
 }
 
-// WAV  =============================================================
 
 
-irrklang::ISoundEngine* soundEngine;
 
 
-void StartWAVEngine() {
+//===============================================================================================================================
+// PIXEL GAME ENGINE FUNCTIONS
+//===============================================================================================================================
 
-	// start the sound engine with default parameters
-	soundEngine = irrklang::createIrrKlangDevice();
 
-	if (!soundEngine)
-	{
-		printf("SOUND : Could not startup FX sound engine\n");
+
+class PGE : public olc::PixelGameEngine
+{
+public:
+
+	//RaycastEngine gameEngine = RaycastEngine();
+
+	PGE() {
+		sAppName = "RaycastEngine";
 	}
 
-	soundEngine->setSoundVolume(0.2);
+	bool OnUserCreate() override {
+		GameStart();
+	}
 
+	bool OnUserUpdate(float fElapsedTime) override {
+		GameUpdate(fElapsedTime);
+	}
+};
+
+PGE pixelGameEngine = PGE();
+
+
+
+
+
+olc::Pixel ColorToOLCPixel(Color c) {
+	return olc::Pixel(c.r, c.g, c.b, c.a);
+}
+
+// Draws a single Pixel
+bool Draw(int32_t x, int32_t y, Color c = WHITE) {
+	return pixelGameEngine.Draw(x, y, ColorToOLCPixel(c));
+}
+
+bool Draw(const vi2d& pos, Color c = WHITE) {
+	return pixelGameEngine.Draw(olc::vi2d(pos.x, pos.y), ColorToOLCPixel(c));
+}
+
+// Draws a line from (x1,y1) to (x2,y2)
+void DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, Color c = WHITE) {
+	pixelGameEngine.DrawLine(x1, y1, x2, y2, ColorToOLCPixel(c));
+}
+
+void DrawLine(const vi2d& pos1, const vi2d& pos2, Color c = WHITE) {
+	pixelGameEngine.DrawLine(olc::vi2d(pos1.x, pos1.y), olc::vi2d(pos2.x, pos2.y), ColorToOLCPixel(c));
+}
+
+// Draws a rectangle at (x,y) to (x+w,y+h)
+void DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, Color c = WHITE) {
+	pixelGameEngine.DrawRect(x, y, w, h, ColorToOLCPixel(c));
+}
+
+void DrawRect(const vi2d& pos, const vi2d& size, Color c = WHITE) {
+	pixelGameEngine.DrawRect(olc::vi2d(pos.x, pos.y), olc::vi2d(size.x, size.y), ColorToOLCPixel(c));
+}
+
+// Fills a rectangle at (x,y) to (x+w,y+h)
+void FillRect(int32_t x, int32_t y, int32_t w, int32_t h, Color c = WHITE) {
+	pixelGameEngine.FillRect(x, y, w, h, ColorToOLCPixel(c));
+}
+
+void FillRect(const vi2d& pos, const vi2d& size, Color c = WHITE) {
+	pixelGameEngine.FillRect(olc::vi2d(pos.x, pos.y), olc::vi2d(size.x, size.y), ColorToOLCPixel(c));
+}
+
+// Draws a single line of text
+void DrawString(int32_t x, int32_t y, const std::string& sText, Color col = WHITE, uint32_t scale = 1) {
+	pixelGameEngine.DrawString(x, y, sText, ColorToOLCPixel(col), scale);
+}
+
+void DrawString(const vi2d& pos, const std::string& sText, Color col = WHITE, uint32_t scale = 1) {
+	pixelGameEngine.DrawString(olc::vi2d(pos.x, pos.y), sText, ColorToOLCPixel(col), scale);
 }
 
 
-// =====================================================================
+
+// Controls
 
 
+HWButton GetKey(Key k) {
+	olc::Key APIKey = static_cast<olc::Key>(k);
+	olc::HWButton APIButtonStates = pixelGameEngine.GetKey(APIKey);
+	HWButton buttonStates;
+	buttonStates.bHeld = APIButtonStates.bHeld;
+	buttonStates.bPressed = APIButtonStates.bPressed;
+	buttonStates.bReleased = APIButtonStates.bReleased;
+	return buttonStates;
+}
+
+HWButton GetMouse(uint32_t b) {
+	olc::HWButton APIButtonStates = pixelGameEngine.GetMouse(b);
+	HWButton buttonStates;
+	buttonStates.bHeld = APIButtonStates.bHeld;
+	buttonStates.bPressed = APIButtonStates.bPressed;
+	buttonStates.bReleased = APIButtonStates.bReleased;
+	return buttonStates;
+}
+
+int32_t GetMouseX()
+{
+	return pixelGameEngine.GetMouseX();
+}
+
+int32_t GetMouseY()
+{
+	return pixelGameEngine.GetMouseY();
+}
+
+
+
+int32_t ScreenWidth() {
+	return pixelGameEngine.ScreenWidth();
+}
+
+int32_t ScreenHeight() {
+	return pixelGameEngine.ScreenHeight();
+}
+
+
+bool IsFocused() {
+	return pixelGameEngine.IsFocused();
+}
+
+vi2d GetWindowMouse() {
+	olc::vi2d vec = pixelGameEngine.GetWindowMouse();
+	return vi2d(vec.x, vec.y);
+}
+
+vi2d GetWindowSize() {
+	olc::vi2d vec = pixelGameEngine.GetWindowSize();
+	return vi2d(vec.x, vec.y);
+}
+
+vi2d GetWindowPosition() {
+	olc::vi2d vec = pixelGameEngine.GetWindowPosition();
+	return vi2d(vec.x, vec.y);
+}
 
 
 
@@ -201,41 +356,71 @@ void StartWAVEngine() {
 
 
 
-// Override base class with your custom functionality
-class RaycastEngine : public olc::PixelGameEngine
-{
+struct Weapon {
+	float damage;
+	float fireRate;
 
-public:
+	bool onPlayer;
 
-	RaycastEngine()
-	{
-		// Name you application
-		sAppName = "RaycastEngine";
+	int currentAmmo;
+	int maxAmmo;
+};
+
+
+//RaycastEngine* RaycastEngine::p_instance = 0;
+
+
+
+	// Drawing stuff
+
+	Color ShadeColor(Color color, float amount = 0.5) {
+		Color darkColor = Color(color.r * amount, color.g * amount, color.b * amount);
+		return darkColor;
+	}
+
+	void DrawSpriteColorTransparent(int32_t x, int32_t y, Sprite* sprite, Color transparancyColor) {
+
+		if (sprite == nullptr)
+			return;
+
+		for (int32_t i = 0; i < sprite->width; i++)
+			for (int32_t j = 0; j < sprite->height; j++)
+				if (sprite->GetPixel(i, j) != transparancyColor)
+					Draw(x + i, y + j, sprite->GetPixel(i, j));
+	}
+
+	void DrawPartialSpriteColorTransparent(int32_t x, int32_t y, int32_t regionX, int32_t regionY, int32_t regionW, int32_t regionH, Sprite* sprite, Color transparancyColor) {
+
+		if (sprite == nullptr)
+			return;
+
+		for (int32_t i = regionX; i < regionX + regionW; i++)
+			for (int32_t j = regionY; j < regionY + regionH; j++)
+				if (sprite->GetPixel(i, j) != transparancyColor)
+					Draw(x + (i % regionW), y + (j % regionH), sprite->GetPixel(i, j));
 	}
 
 
-	enum GameState { STATE_GAMEPLAY, STATE_MENU, STATE_EDITOR, STATE_TITLESCREEN, STATE_ENDGAME, STATE_LORESCREEN};
-	GameState gameState;
 
 
-	
+
 
 	// Some internal stuff ---------------------------
 
-	bool isMenuOpen = false;
+	enum GameState { STATE_GAMEPLAY, STATE_MENU, STATE_EDITOR, STATE_TITLESCREEN, STATE_ENDGAME, STATE_LORESCREEN };
+	GameState gameState;
 
 
 	// Stuff for rendering
-
 	bool* drawnPixels;
-	//1D Zbuffer
 	float* ZBuffer;
-
 
 
 	// UI
 
 	bool showCursor = false;
+	bool isMenuOpen = false;
+
 
 	std::string infoLog0 = "";
 	std::string infoLog1 = "";
@@ -254,7 +439,7 @@ public:
 	// Controls
 
 	float mouseSensitivity = 1.0;
-	
+
 
 	// Game
 
@@ -267,12 +452,7 @@ public:
 	// MAP
 	//===============================================================================================================================
 
-
-
-	uint32_t newId;
-
-
-
+	uint32_t newId = 1;
 
 	std::string worldMapName;
 	std::string worldMapFile;
@@ -308,11 +488,10 @@ public:
 		itemsArray.clear();
 		thingsArray.clear();
 		interactbleWallsArray.clear();
+		worldMap.clear();
 
 		// Starting with id = 1
 		newId = 1; // 0 is reserved !!!
-
-		worldMap.clear();
 
 
 		// First row (11111111111111111111)
@@ -320,12 +499,14 @@ public:
 			worldMap.push_back(1);
 		}
 		// Center (10000000000000001)
-		for (int i = 0; i < worldMapWidth * worldMapHeight - 20; i++) {
-			if (i % 20 == 0 || i % 19 == 0) {
-				worldMap.push_back(1);
-			}
-			else {
-				worldMap.push_back(0);
+		for (int i = 0; i < 18; i++) {
+			for (int j = 0; j < worldMapWidth; j++) {
+				if (j % 19 == 0) {
+					worldMap.push_back(1);
+				}
+				else {
+					worldMap.push_back(0);
+				}
 			}
 		}
 		// Last row (11111111111111111111)
@@ -333,16 +514,20 @@ public:
 			worldMap.push_back(1);
 		}
 
+
 		midiFileName = "NAILS";
 
-		player.position = olc::vf2d(1.5, 1.5);
+		player.position = vf2d(1.5, 1.5);
+
+		InteractibleWall endLevel = InteractibleWall(vf2d(3, 3), InteractibleWall::InteractionType::ENDLEVEL);
+		interactbleWallsArray.push_back(endLevel);
 
 	}
 
 
 
 	void LoadMap(std::string mapName) {
-		
+
 		std::cout << "Loading map : " << mapName << "  ....." << std::endl;
 
 
@@ -510,7 +695,7 @@ public:
 						//std::cout << "-> Player found : " << playerLine << '\n';
 
 
-						olc::vf2d readPosition{ -1, -1 };
+						vf2d readPosition{ -1, -1 };
 
 						std::smatch match;
 
@@ -544,7 +729,7 @@ public:
 							}
 							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
 
-							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+							readPosition = vf2d(std::stof(posX), std::stof(posY));
 
 							//std::cout << "-> Position read V : " << readPosition << '\n';
 						}
@@ -553,12 +738,12 @@ public:
 						}
 
 
-						if (readPosition != olc::vf2d(-1, -1)) {
+						if (readPosition != vf2d(-1, -1)) {
 							player.position = readPosition;
 						}
 						else {
 							std::cout << "-> ERROR : Player reading fail" << std::endl;
-							player.position = olc::vf2d(1.5, 1.5);
+							player.position = vf2d(1.5, 1.5);
 						}
 
 					}
@@ -572,7 +757,7 @@ public:
 						//std::cout << "-> Level end found : " << endLevelLine << '\n';
 
 
-						olc::vf2d readPosition{ -1, -1 };
+						vf2d readPosition{ -1, -1 };
 
 						std::smatch match;
 
@@ -606,7 +791,7 @@ public:
 							}
 							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
 
-							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+							readPosition = vf2d(std::stof(posX), std::stof(posY));
 
 							//std::cout << "-> Position read V : " << readPosition << '\n';
 						}
@@ -614,8 +799,8 @@ public:
 							std::cout << "-> ERROR : Level end position reading fail" << std::endl;
 						}
 
-						if (readPosition != olc::vf2d(-1, -1)) {
-							InteractibleWall newWall = InteractibleWall(this, readPosition, InteractibleWall::InteractionType::ENDLEVEL);
+						if (readPosition != vf2d(-1, -1)) {
+							InteractibleWall newWall = InteractibleWall(readPosition, InteractibleWall::InteractionType::ENDLEVEL);
 							interactbleWallsArray.push_back(newWall);
 						}
 						else {
@@ -635,7 +820,7 @@ public:
 
 
 						int readType = -1;
-						olc::vf2d readPosition{ -1, -1 };
+						vf2d readPosition{ -1, -1 };
 
 						std::smatch match;
 
@@ -649,14 +834,15 @@ public:
 							//std::cout << "-> Type found : " << foundType << '\n';
 							readType = std::stoi(foundType.substr(6, foundType.length() - 7));
 							//std::cout << "-> Type read : " << readType << '\n';
-						} else {
+						}
+						else {
 							std::cout << "-> ERROR : Enemy type reading fail" << std::endl;
 						}
 
 						// Position
 						std::regex_search(enemyLine.cbegin(), enemyLine.cend(), match, std::regex("(position=\")(.*)(\":)"));
 						std::string foundPosition = match.str();
-						if (foundPosition != "") 
+						if (foundPosition != "")
 						{
 							foundPosition = foundPosition.substr(0, foundPosition.length() - 1); // remove ":" in the end
 							//std::cout << "-> Position found : " << foundPosition << '\n';
@@ -668,7 +854,7 @@ public:
 							std::string posY = "";
 
 							// Parcing floats
-							for (int i = 0; i < foundPosition.length(); i++) {				
+							for (int i = 0; i < foundPosition.length(); i++) {
 								if (!readingX) {
 									posY += foundPosition[i];
 								}
@@ -682,17 +868,19 @@ public:
 							}
 							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
 
-							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+							readPosition = vf2d(std::stof(posX), std::stof(posY));
 
 							//std::cout << "-> Position read V : " << readPosition << '\n';
-						} else {
+						}
+						else {
 							std::cout << "-> ERROR : Enemy position reading fail" << std::endl;
 						}
 
-						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
-							Enemy newEnemy = Enemy(this, newId, readType, readPosition);
+						if (readType != -1 && readPosition != vf2d(-1, -1)) {
+							Enemy newEnemy = Enemy(newId, readType, readPosition);
 							enemiesArray.push_back(newEnemy); newId++;
-						} else {
+						}
+						else {
 							std::cout << "Enemy reading fail" << std::endl;
 						}
 
@@ -710,7 +898,7 @@ public:
 
 
 						int readType = -1;
-						olc::vf2d readPosition{ -1, -1 };
+						vf2d readPosition{ -1, -1 };
 
 						std::smatch match;
 
@@ -724,7 +912,8 @@ public:
 							//std::cout << "-> Type found : " << foundType << '\n';
 							readType = std::stoi(foundType.substr(6, foundType.length() - 7));
 							//std::cout << "-> Type read : " << readType << '\n';
-						} else {
+						}
+						else {
 							//std::cout << "-> ERROR : Decoration type reading fail" << std::endl;
 						}
 
@@ -757,18 +946,20 @@ public:
 							}
 							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
 
-							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+							readPosition = vf2d(std::stof(posX), std::stof(posY));
 
 							//std::cout << "-> Position read V : " << readPosition << '\n';
-						} else {
+						}
+						else {
 							std::cout << "-> ERROR : Decoration position reading fail" << std::endl;
 						}
 
 
-						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
-							Decoration newDecoration = Decoration(this, newId, readType, readPosition);
+						if (readType != -1 && readPosition != vf2d(-1, -1)) {
+							Decoration newDecoration = Decoration(newId, readType, readPosition);
 							decorationsArray.push_back(newDecoration); newId++;
-						} else {
+						}
+						else {
 							std::cout << "-> ERROR : Decoration reading fail" << std::endl;
 						}
 					}
@@ -786,7 +977,7 @@ public:
 
 
 						int readType = -1;
-						olc::vf2d readPosition{ -1, -1 };
+						vf2d readPosition{ -1, -1 };
 
 						std::smatch match;
 
@@ -834,7 +1025,7 @@ public:
 							}
 							//std::cout << "-> Position read X : " << posX << "  Y : " << posY << '\n';
 
-							readPosition = olc::vf2d(std::stof(posX), std::stof(posY));
+							readPosition = vf2d(std::stof(posX), std::stof(posY));
 
 							//std::cout << "-> Position read V : " << readPosition << '\n';
 						}
@@ -843,8 +1034,8 @@ public:
 						}
 
 
-						if (readType != -1 && readPosition != olc::vf2d(-1, -1)) {
-							Item newItem = Item(this, newId, readType, readPosition);
+						if (readType != -1 && readPosition != vf2d(-1, -1)) {
+							Item newItem = Item(newId, readType, readPosition);
 							itemsArray.push_back(newItem); newId++;
 						}
 						else {
@@ -906,7 +1097,7 @@ public:
 			else {
 				std::cout << "MAP READ ERROR" << std::endl;
 			}
-			
+
 
 
 		}
@@ -978,10 +1169,10 @@ public:
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
 
-				
+
 				if (x < worldMapWidth && y < worldMapHeight) {
 					//std::cout << worldMap[y * worldMapWidth + x];
-					newWorldMap.push_back(worldMap[y*worldMapWidth + x]);
+					newWorldMap.push_back(worldMap[y * worldMapWidth + x]);
 				}
 				else {
 					std::cout << 0;
@@ -991,7 +1182,7 @@ public:
 			}
 			//std::cout << std::endl;
 		}
-		
+
 
 
 		worldMap = newWorldMap;
@@ -1008,16 +1199,6 @@ public:
 	//===============================================================================================================================
 
 
-	struct Weapon {
-		float damage;
-		float fireRate;
-
-		bool onPlayer;
-
-		int currentAmmo;
-		int maxAmmo;
-	};
-
 	Weapon weapons[3] = {
 		// Pistol
 		{10, 0.4, true, 40, 400},
@@ -1031,82 +1212,19 @@ public:
 
 
 
-	class Thing
-	{
-
-	public:
-
-		RaycastEngine* engineReference;
-
-		uint32_t id;
-
-		// Sprite info
-		int texture = 0;
-		int spritePartIndex = 0;
-		bool enableRender = true;
-
-		// Position
-		olc::vf2d position = olc::vf2d{ 10.0, 10.0 };
-
-		// Collision
-		bool enableCollision = true;
-		float collisionSize = 0.5;
-
-		int thingType = 0; // 0 - decoration, 1 - enemy, 2 - item
 
 
-		Thing(RaycastEngine* engine) {
-			engineReference = engine;
-			id = 0;
-			thingType = 0;
-			texture = 0;
-			spritePartIndex = 0;
-			position = olc::vf2d{ 10.0, 10.0 };
-			enableCollision = true;
-			collisionSize = 0.5;
-		}
-		Thing(RaycastEngine* engine, uint32_t globId, int type, int tex, olc::vf2d pos) {
-			engineReference = engine;
-			id = globId;
-			thingType = type;
-			texture = tex;
-			spritePartIndex = 0;
-			position = pos;
-			enableCollision = true;
-			collisionSize = 0.5;
-		}
-		bool operator == (const Thing& rhs) const { return (this->id == rhs.id && this->position == rhs.position && this->texture == rhs.texture); }
-		bool operator != (Thing& rhs) const { return (this->id != rhs.id || this->position != rhs.position || this->texture != rhs.texture); }
 
 
-		bool CheckRayCollision(olc::vf2d start, olc::vf2d direction, float length) {
-			if (enableCollision) {
-				olc::vf2d spriteColPnt1 = olc::vf2d(position.x, position.y) + direction.perp() * 0.5 * collisionSize;
-				olc::vf2d spriteColPnt2 = olc::vf2d(position.x, position.y) - direction.perp() * 0.5 * collisionSize;
-
-				bool interc = engineReference->LineIntersection
-				(
-					start,
-					start + direction * length,
-					spriteColPnt1,
-					spriteColPnt2
-				);
-				return interc;
-			}
-			else {
-				return false;
-			}
-		}
-	};
 
 
 	class Enemy : public Thing {
 
 	public:
-		Enemy(RaycastEngine* engine) : Thing(engine) {
+		Enemy() : Thing() {
 			//std::cout << "Created Enemy | ID : " << id << std::endl;
 		};
-		Enemy(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 1 , tex, pos) {
+		Enemy(uint32_t globId, int tex, vf2d pos) : Thing(globId, 1, tex, pos) {
 			//std::cout << "Created Enemy, param | ID : " << id << std::endl;
 
 			if (tex == 0) {
@@ -1138,7 +1256,7 @@ public:
 
 
 		Thing ToThing() {
-			Thing thing = Thing(engineReference, id, thingType, texture, position);
+			Thing thing = Thing(id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -1149,7 +1267,7 @@ public:
 
 		int enemyState = 0; // 0 - idle0,    1 - idle1,    2 - atack,    3 - dying0,    4 - dying1,    5 - dying3
 		float spriteTimer;
-		
+
 		int enemyAIstate = 0; // 0 - calm,   1 - folowing,    2 - Running back
 		float AItimer;
 
@@ -1161,9 +1279,9 @@ public:
 		int damage = 5;
 
 
-		olc::vf2d velocity{ 0,0 };
-		olc::vf2d moveVector{ 1, 1 };
-		olc::vf2d randMoveVector{ 1, 1 };
+		vf2d velocity{ 0,0 };
+		vf2d moveVector{ 1, 1 };
+		vf2d randMoveVector{ 1, 1 };
 		float moveSpeed = 5;
 
 
@@ -1174,7 +1292,7 @@ public:
 			// Update things info ----------------------------------
 
 			if (isUpdating) {
-				engineReference->UpdateThings();
+				UpdateThings();
 			}
 
 
@@ -1216,7 +1334,7 @@ public:
 			if (spriteTimer <= 0 && enemyState == 4) {
 				enemyState = 5;
 				spritePartIndex = enemyState; // Change sprite part to render
-				engineReference->UpdateThings();
+				UpdateThings();
 				isUpdating = false;
 			}
 
@@ -1229,12 +1347,12 @@ public:
 				AItimer -= fElapsedTime;
 				//std::cout << AItimer << std::endl;
 
-				olc::vf2d playerRelativePos = olc::vf2d(position - engineReference->player.position) * (-1);
+				vf2d playerRelativePos = vf2d(position - player.position) * (-1);
 				bool playerInSight = false;
 
 				// Calm state
 				if (enemyAIstate == 0) {
-					moveVector = olc::vf2d(0, 0);
+					moveVector = vf2d(0, 0);
 
 					// Search for player
 					if (AItimer <= 0) {
@@ -1242,7 +1360,7 @@ public:
 						AItimer = 0.5;
 					}
 
-					if (playerInSight && engineReference->player.isAlive) {
+					if (playerInSight && player.isAlive) {
 						//std::cout << "Player is found" << std::endl;
 						enemyAIstate = 1;
 						AItimer = 1.0;
@@ -1266,7 +1384,7 @@ public:
 						}
 						if (randAction > 800) {
 							enemyAIstate = 2;
-							randMoveVector = olc::vf2d(1.0 - rand() % 2000 / 1000.0, 1.0 - rand() % 2000 / 1000.0);
+							randMoveVector = vf2d(1.0 - rand() % 2000 / 1000.0, 1.0 - rand() % 2000 / 1000.0);
 							AItimer = 1.0;
 						}
 
@@ -1277,7 +1395,7 @@ public:
 							spritePartIndex = enemyState; // Change sprite part to render
 							spriteTimer = 0.2;
 							if (texture != 3) { // Boss dont make damege
-								engineReference->player.TakeDamage(damage + (rand() % 4 - 2));
+								player.TakeDamage(damage + (rand() % 4 - 2));
 							}
 						}
 
@@ -1299,7 +1417,7 @@ public:
 
 
 
-				if (!engineReference->player.isAlive) {
+				if (!player.isAlive) {
 					enemyAIstate = 0;
 				}
 
@@ -1317,10 +1435,10 @@ public:
 				}
 
 
-				if (engineReference->worldMap[int(position.y) * engineReference->worldMapWidth + int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))] == false)
+				if (worldMap[int(position.y) * worldMapWidth + int(position.x + (velocity.x * fElapsedTime * 600) + (velocity.norm().x * 0.5))] == false)
 					position.x += velocity.x * fElapsedTime * 600;
 
-				if (engineReference->worldMap[int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5)) * engineReference->worldMapWidth + int(position.x)] == false)
+				if (worldMap[int(position.y + (velocity.y * fElapsedTime * 600) + (velocity.norm().y * 0.5)) * worldMapWidth + int(position.x)] == false)
 					position.y += velocity.y * fElapsedTime * 600;
 
 
@@ -1357,25 +1475,25 @@ public:
 				spriteTimer = 0.3;
 				spritePartIndex = enemyState;
 
-				//engineReference->isNewGameStarted
+				//isNewGameStarted
 				if (texture == 3) { // Boss
-					engineReference->bossDefeated++;
+					bossDefeated++;
 				}
 
-				engineReference->UpdateThings();
+				UpdateThings();
 			}
 		}
 
 
-		bool ShootRay(olc::vf2d rayDir) {
+		bool ShootRay(vf2d rayDir) {
 
-			float rayDistance = engineReference->ShootRaycastRay(position, rayDir);
+			float rayDistance = ShootRaycastRay(position, rayDir);
 			//std::cout << "RD : " << rayDistance << std::endl;
 
 			bool collide = false;
-			for (int i = 0; i < engineReference->thingsArray.size(); i++) {
+			for (int i = 0; i < thingsArray.size(); i++) {
 
-				Thing* spriteToTest = &engineReference->thingsArray[engineReference->spriteOrder[engineReference->thingsArray.size() - 1 - i]];
+				Thing* spriteToTest = &thingsArray[spriteOrder[thingsArray.size() - 1 - i]];
 
 				collide = spriteToTest->CheckRayCollision(position, rayDir, rayDistance);
 				if (collide)
@@ -1385,8 +1503,8 @@ public:
 				}
 			}
 
-			if (!collide && (position - engineReference->player.position).mag() < rayDistance) {
-				//std::cout << "HIT PLAYER : " << (position - engineReference->player.position).mag() << std::endl;
+			if (!collide && (position - player.position).mag() < rayDistance) {
+				//std::cout << "HIT PLAYER : " << (position - player.position).mag() << std::endl;
 				return true;
 			}
 			else {
@@ -1406,10 +1524,10 @@ public:
 
 	public:
 
-		Item(RaycastEngine* engine) : Thing(engine) {
+		Item() : Thing() {
 			//std::cout << "Created Item | ID : " << id << std::endl;
 		};
-		Item(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 2 ,tex, pos) {
+		Item(uint32_t globId, int tex, vf2d pos) : Thing(globId, 2, tex, pos) {
 			//std::cout << "Created Item, param  | ID : " << id << std::endl;
 
 			enableCollision = false;
@@ -1417,7 +1535,7 @@ public:
 
 
 		Thing ToThing() {
-			Thing thing = Thing(engineReference, id, thingType, texture, position);
+			Thing thing = Thing(id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -1431,7 +1549,7 @@ public:
 
 		void Update(float fElapsedTime) {
 
-			engineReference -> UpdateThings();
+			UpdateThings();
 			CheckForPickup();
 
 		}
@@ -1439,107 +1557,107 @@ public:
 
 		void CheckForPickup() {
 			if (!isPickedup) {
-				float distanceToItem = (engineReference->player.position - position).mag2();
+				float distanceToItem = (player.position - position).mag2();
 				if (distanceToItem < 0.3) {
 
 
 					if (texture == 0) {
-						if (engineReference->player.health != 100) {
-							engineReference->player.health += 20;
-							engineReference->InfoLog("Picked up Medkit");
+						if (player.health != 100) {
+							player.health += 20;
+							InfoLog("Picked up Medkit");
 							enableRender = false;
 							isPickedup = true;
 							std::cout << "Item picked up | ID : " << id << std::endl;
 							soundEngine->play2D("sounds/pickup.wav", false);
 
 						}
-						if (engineReference->player.health > 100) {
-							engineReference->player.health = 100;
+						if (player.health > 100) {
+							player.health = 100;
 						}
 					}
 
 					if (texture == 1) {
-						if (engineReference->weapons[0].currentAmmo != engineReference->weapons[0].maxAmmo) {
-							engineReference->weapons[0].currentAmmo += 20;
-							engineReference->weapons[1].currentAmmo += 20;
-							engineReference->InfoLog("Picked up 9mm ammo");
+						if (weapons[0].currentAmmo != weapons[0].maxAmmo) {
+							weapons[0].currentAmmo += 20;
+							weapons[1].currentAmmo += 20;
+							InfoLog("Picked up 9mm ammo");
 							enableRender = false;
 							isPickedup = true;
 							std::cout << "Item picked up | ID : " << id << std::endl;
 							soundEngine->play2D("sounds/pickup.wav", false);
 						}
-						if (engineReference->weapons[0].currentAmmo > engineReference->weapons[0].maxAmmo || engineReference->weapons[1].currentAmmo > engineReference->weapons[1].maxAmmo) {
-							engineReference->weapons[0].currentAmmo = engineReference->weapons[0].maxAmmo;
-							engineReference->weapons[1].currentAmmo = engineReference->weapons[1].maxAmmo;
+						if (weapons[0].currentAmmo > weapons[0].maxAmmo || weapons[1].currentAmmo > weapons[1].maxAmmo) {
+							weapons[0].currentAmmo = weapons[0].maxAmmo;
+							weapons[1].currentAmmo = weapons[1].maxAmmo;
 						}
 					}
 
 					if (texture == 2) {
-						if (engineReference->weapons[2].currentAmmo != engineReference->weapons[2].maxAmmo) {
-							engineReference->weapons[2].currentAmmo += 8;
-							engineReference->InfoLog("Picked up shells");
+						if (weapons[2].currentAmmo != weapons[2].maxAmmo) {
+							weapons[2].currentAmmo += 8;
+							InfoLog("Picked up shells");
 							enableRender = false;
 							isPickedup = true;
 							std::cout << "Item picked up | ID : " << id << std::endl;
 							soundEngine->play2D("sounds/pickup.wav", false);
 
 						}
-						if (engineReference->weapons[2].currentAmmo > engineReference->weapons[2].maxAmmo) {
-							engineReference->weapons[2].currentAmmo = engineReference->weapons[2].maxAmmo;
+						if (weapons[2].currentAmmo > weapons[2].maxAmmo) {
+							weapons[2].currentAmmo = weapons[2].maxAmmo;
 						}
 					}
 
 					if (texture == 3) { // Uzi
 
 						bool changeWeaponAfterPickup = false;
-						if (engineReference->weapons[1].onPlayer == false) {
+						if (weapons[1].onPlayer == false) {
 							changeWeaponAfterPickup = true;
 						}
 
-						engineReference->weapons[1].onPlayer = true;
-						engineReference->InfoLog("Picked up Uzi!");
+						weapons[1].onPlayer = true;
+						InfoLog("Picked up Uzi!");
 						enableRender = false;
 						isPickedup = true;
 						std::cout << "Item picked up | ID : " << id << std::endl;
 						soundEngine->play2D("sounds/pickup.wav", false);
 
 						if (changeWeaponAfterPickup) {
-							engineReference->player.ChangeWeapon(1);
+							player.ChangeWeapon(1);
 						}
 
-						if (engineReference->weapons[0].currentAmmo != engineReference->weapons[0].maxAmmo) {
-							engineReference->weapons[0].currentAmmo += 20;
-							engineReference->weapons[1].currentAmmo += 20;
+						if (weapons[0].currentAmmo != weapons[0].maxAmmo) {
+							weapons[0].currentAmmo += 20;
+							weapons[1].currentAmmo += 20;
 						}
-						if (engineReference->weapons[0].currentAmmo > engineReference->weapons[0].maxAmmo || engineReference->weapons[1].currentAmmo > engineReference->weapons[1].maxAmmo) {
-							engineReference->weapons[0].currentAmmo = engineReference->weapons[0].maxAmmo;
-							engineReference->weapons[1].currentAmmo = engineReference->weapons[1].maxAmmo;
+						if (weapons[0].currentAmmo > weapons[0].maxAmmo || weapons[1].currentAmmo > weapons[1].maxAmmo) {
+							weapons[0].currentAmmo = weapons[0].maxAmmo;
+							weapons[1].currentAmmo = weapons[1].maxAmmo;
 						}
 					}
 
 					if (texture == 4) { // Shotgun
 
 						bool changeWeaponAfterPickup = false;
-						if (engineReference->weapons[2].onPlayer == false) {
+						if (weapons[2].onPlayer == false) {
 							changeWeaponAfterPickup = true;
 						}
 
-						engineReference->weapons[2].onPlayer = true;
-						engineReference->InfoLog("Picked up Shotgun!");
+						weapons[2].onPlayer = true;
+						InfoLog("Picked up Shotgun!");
 						enableRender = false;
 						isPickedup = true;
 						soundEngine->play2D("sounds/pickup.wav", false);
 
 						if (changeWeaponAfterPickup) {
-							engineReference->player.ChangeWeapon(2);
+							player.ChangeWeapon(2);
 						}
 
-						if (engineReference->weapons[2].currentAmmo != engineReference->weapons[2].maxAmmo) {
-							engineReference->weapons[2].currentAmmo += 8;				
+						if (weapons[2].currentAmmo != weapons[2].maxAmmo) {
+							weapons[2].currentAmmo += 8;
 							std::cout << "Item picked up | ID : " << id << std::endl;
 						}
-						if (engineReference->weapons[2].currentAmmo > engineReference->weapons[2].maxAmmo) {
-							engineReference->weapons[2].currentAmmo = engineReference->weapons[2].maxAmmo;
+						if (weapons[2].currentAmmo > weapons[2].maxAmmo) {
+							weapons[2].currentAmmo = weapons[2].maxAmmo;
 						}
 					}
 
@@ -1547,7 +1665,7 @@ public:
 			}
 		}
 
-		
+
 
 
 	};
@@ -1556,14 +1674,14 @@ public:
 	class Decoration : public Thing {
 
 	public:
-		Decoration(RaycastEngine* engine) : Thing(engine) {
+		Decoration() : Thing() {
 			//std::cout << "Created Decoration | ID : " << id << std::endl;
 		};
-		Decoration(RaycastEngine* engine, uint32_t globId, int tex, olc::vf2d pos) : Thing(engine, globId, 0, tex, pos) {
+		Decoration(uint32_t globId, int tex, vf2d pos) : Thing(globId, 0, tex, pos) {
 			//std::cout << "Created Decoration, param | ID : " << id << std::endl;
 
 			// Disable collision for lamps
-			if (tex == 2) { 
+			if (tex == 2) {
 				enableCollision = false;
 			}
 
@@ -1574,7 +1692,7 @@ public:
 		}
 
 		Thing ToThing() {
-			Thing thing = Thing(engineReference, id, thingType, texture, position);
+			Thing thing = Thing(id, thingType, texture, position);
 			thing.spritePartIndex = spritePartIndex;
 			thing.enableCollision = enableCollision;
 			thing.enableRender = enableRender;
@@ -1603,13 +1721,11 @@ public:
 
 	public:
 
-		RaycastEngine* engineReference;
-
 		// Position
-		olc::vf2d position = olc::vf2d{ 0, 0 };
-		olc::vf2d direction = olc::vf2d{ -1, 0 };
+		vf2d position = vf2d{ 0, 0 };
+		vf2d direction = vf2d{ -1, 0 };
 
-		olc::vf2d viewPlane = olc::vf2d{ 0, -0.75 }; //the 2d raycaster version of camera plane
+		vf2d viewPlane = vf2d{ 0, -0.75 }; //the 2d raycaster version of camera plane
 		float cameraVertical = 0;
 
 
@@ -1622,12 +1738,12 @@ public:
 		float moveSpeed = 5.0;
 		float rotationSpeed = 3.0;
 
-		olc::vf2d playerVelocity = { 0, 0 };
+		vf2d playerVelocity = { 0, 0 };
 
 		bool isMoving = false;
 		bool isShooting = false;
-		olc::vf2d controlMoveVector = { 0, 0 };
-		olc::vf2d controlRotationVector = { 0 ,0 };
+		vf2d controlMoveVector = { 0, 0 };
+		vf2d controlRotationVector = { 0 ,0 };
 
 		// Stats
 		int health = 100;
@@ -1661,7 +1777,7 @@ public:
 				if (weaponDelay > 0) {
 					weaponDelay -= fElapsedTime;
 
-					float weaponStateTime = engineReference->weapons[activeWeapon].fireRate / 3;
+					float weaponStateTime = weapons[activeWeapon].fireRate / 3;
 
 					if (weaponDelay < weaponStateTime * 2) {
 						weaponState = 2;
@@ -1689,13 +1805,13 @@ public:
 		}
 
 
-		
+
 		void WeaponChanging(float fElapsedTime) {
 			if (changeWeaponTimer > 0) {
 				changeWeaponTimer -= fElapsedTime;
 			}
 
-			if (changeWeaponTimer < timeToChangeWeapon/2) {
+			if (changeWeaponTimer < timeToChangeWeapon / 2) {
 				activeWeapon = weaponToChange;
 			}
 
@@ -1705,7 +1821,7 @@ public:
 		}
 
 		void ChangeWeapon(int weapon) {
-			if (changeWeaponTimer == 0 && activeWeapon != weapon && engineReference->weapons[weapon].onPlayer == true) {
+			if (changeWeaponTimer == 0 && activeWeapon != weapon && weapons[weapon].onPlayer == true) {
 				changeWeaponTimer = timeToChangeWeapon;
 				weaponState = 0;
 				weaponDelay = 0;
@@ -1727,10 +1843,10 @@ public:
 			}
 
 
-			if (engineReference->worldMap[int(position.y) * engineReference->worldMapWidth + int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.1))] == false)
+			if (worldMap[int(position.y) * worldMapWidth + int(position.x + (playerVelocity.x * fElapsedTime * 600) + (playerVelocity.norm().x * 0.1))] == false)
 				position.x += playerVelocity.x * fElapsedTime * 600;
 
-			if (engineReference->worldMap[int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.1)) * engineReference->worldMapWidth + int(position.x)] == false)
+			if (worldMap[int(position.y + (playerVelocity.y * fElapsedTime * 600) + (playerVelocity.norm().y * 0.1)) * worldMapWidth + int(position.x)] == false)
 				position.y += playerVelocity.y * fElapsedTime * 600;
 
 
@@ -1756,20 +1872,20 @@ public:
 
 			if (weaponState == 0 && weaponDelay == 0 && changeWeaponTimer == 0) { // If weapon is idle
 
-				if (engineReference->weapons[activeWeapon].currentAmmo > 0) { // If player have ammo
+				if (weapons[activeWeapon].currentAmmo > 0) { // If player have ammo
 
-				
+
 					// Change weapon state
 					weaponState = 1; // Shooting
-					weaponDelay = engineReference->weapons[activeWeapon].fireRate;
+					weaponDelay = weapons[activeWeapon].fireRate;
 
 					// Shooting
 
-					engineReference->weapons[activeWeapon].currentAmmo--;
+					weapons[activeWeapon].currentAmmo--;
 
 					// Weapon 0 and 1 (pistol and uzi) have same ammo, so i equal them
-					if (activeWeapon == 0) engineReference->weapons[1].currentAmmo = engineReference->weapons[activeWeapon].currentAmmo;
-					if (activeWeapon == 1) engineReference->weapons[0].currentAmmo = engineReference->weapons[activeWeapon].currentAmmo;
+					if (activeWeapon == 0) weapons[1].currentAmmo = weapons[activeWeapon].currentAmmo;
+					if (activeWeapon == 1) weapons[0].currentAmmo = weapons[activeWeapon].currentAmmo;
 
 
 					if (activeWeapon == 0) { // Pistol and Uzi
@@ -1796,21 +1912,21 @@ public:
 
 			//std::cout << "Shoot vector : " << direction + viewPlane * angle << std::endl;
 
-			float rayDistance = engineReference->ShootRaycastRay(position, direction + viewPlane * angle);
-			//engineReference->aimDist = std::to_string(rayDistance);
+			float rayDistance = ShootRaycastRay(position, direction + viewPlane * angle);
+			//aimDist = std::to_string(rayDistance);
 
-			for (int i = 0; i < engineReference->thingsArray.size(); i++) {
+			for (int i = 0; i < thingsArray.size(); i++) {
 
-				Thing* spriteToTest = &engineReference->thingsArray[engineReference->spriteOrder[engineReference->thingsArray.size() - 1 - i]];
+				Thing* spriteToTest = &thingsArray[spriteOrder[thingsArray.size() - 1 - i]];
 
 				bool collide = spriteToTest->CheckRayCollision(position, direction, rayDistance);
 				if (collide)
 				{
 					//std::cout << "Hit : " << spriteToTest->position.x << "  " << spriteToTest->position.y << "   " << spriteToTest->texture << std::endl;
-					Enemy* hittedEnemy = engineReference->GetEnemyByID(spriteToTest->id);
+					Enemy* hittedEnemy = GetEnemyByID(spriteToTest->id);
 					if (hittedEnemy != nullptr) {
 						//std::cout << "Hited enemy found | ID:  " << hittedEnemy->id << std::endl;
-						hittedEnemy->TakeDamage(engineReference->weapons[activeWeapon].damage);
+						hittedEnemy->TakeDamage(weapons[activeWeapon].damage);
 						hittedEnemy = nullptr;
 					}
 					break;
@@ -1820,17 +1936,17 @@ public:
 
 		void Interact() {
 
-			for (int i = 0; i < engineReference->interactbleWallsArray.size(); i++) {
+			for (int i = 0; i < interactbleWallsArray.size(); i++) {
 
-				olc::vi2d interactionVector = position + direction * 0.5;
+				vi2d interactionVector = position + direction * 0.5;
 				std::cout << "Interaction : " << interactionVector << std::endl;
 
-				if (interactionVector == engineReference->interactbleWallsArray[i].wallPosition) {
-					std::cout << "Activated wall : " << engineReference->interactbleWallsArray[i].wallPosition << std::endl;
-					engineReference->interactbleWallsArray[i].isActive = true;
-					engineReference->interactbleWallsArray[i].Interact();
+				if (interactionVector == interactbleWallsArray[i].wallPosition) {
+					std::cout << "Activated wall : " << interactbleWallsArray[i].wallPosition << std::endl;
+					interactbleWallsArray[i].isActive = true;
+					interactbleWallsArray[i].Interact();
 				}
-				
+
 			}
 		}
 
@@ -1850,14 +1966,16 @@ public:
 			health = 100;
 			isAlive = true;
 
-			engineReference->weapons[0].currentAmmo = 30;
-			engineReference->weapons[1].currentAmmo = 30;
-			engineReference->weapons[2].currentAmmo = 0;
+			weapons[0].currentAmmo = 30;
+			weapons[1].currentAmmo = 30;
+			weapons[2].currentAmmo = 0;
 
-			engineReference->weapons[1].onPlayer = false;
-			engineReference->weapons[2].onPlayer = false;
+			weapons[1].onPlayer = false;
+			weapons[2].onPlayer = false;
 
 			activeWeapon = 0;
+			weaponState = 0;
+			weaponDelay = 0;
 		}
 
 	};
@@ -1866,12 +1984,10 @@ public:
 
 
 	class InteractibleWall {
-	
+
 	public:
 
-		RaycastEngine* engineReference;
-
-		olc::vi2d wallPosition;
+		vi2d wallPosition;
 		bool isActive;
 
 		enum InteractionType { NONE, ENDLEVEL, OPENWALLS };
@@ -1880,15 +1996,13 @@ public:
 		std::vector<int> wallsToOpen;
 
 
-		InteractibleWall(RaycastEngine* engine) {
-			engineReference = engine;
-			wallPosition = olc::vi2d(-1, -1);
+		InteractibleWall() {
+			wallPosition = vi2d(-1, -1);
 			isActive = false;
 			interactionType = InteractionType::NONE;
 		}
 
-		InteractibleWall(RaycastEngine* engine, olc::vi2d wallPos, InteractionType type) {
-			engineReference = engine;
+		InteractibleWall(vi2d wallPos, InteractionType type) {
 			wallPosition = wallPos;
 			isActive = false;
 			interactionType = type;
@@ -1906,11 +2020,11 @@ public:
 			else if (interactionType == InteractionType::ENDLEVEL)
 			{
 				std::cout << "LEVEL END" << std::endl;
-				if (engineReference->worldMapNextMapFile != "") {
-					std::string mapFile = "maps/" + engineReference->worldMapNextMapFile + ".map";
-					engineReference->LoadMap(mapFile);
-					engineReference->gameState = GameState::STATE_GAMEPLAY;
-					engineReference->PlayMapMIDI();
+				if (worldMapNextMapFile != "") {
+					std::string mapFile = "maps/" + worldMapNextMapFile + ".map";
+					LoadMap(mapFile);
+					gameState = GameState::STATE_GAMEPLAY;
+					PlayMapMIDI();
 				}
 			}
 			else if (interactionType == InteractionType::OPENWALLS)
@@ -1918,9 +2032,31 @@ public:
 				return;
 			}
 		}
-		
+
 
 	};
+
+
+
+
+
+
+
+
+
+	//===============================================================================================================================
+	// ENGINE 
+	//===============================================================================================================================
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1998,59 +2134,62 @@ public:
 	// ASSETS
 	//===============================================================================================================================
 
+
+	ImageLoader imageLoader = ImageLoader();
+
 	// Assets ---------------------------------------
 
 	// UI
-	olc::Sprite spriteCursor;
+	Sprite spriteCursor;
 
 	// Weapon in HUD sprites
-	olc::Sprite weaponPistol;
-	olc::Sprite weaponUzi;
-	olc::Sprite weaponShotgun;
+	Sprite weaponPistol;
+	Sprite weaponUzi;
+	Sprite weaponShotgun;
 
 	// Walls
-	olc::Sprite spriteWallAtlas;
+	Sprite spriteWallAtlas;
 
-	std::vector<olc::Sprite*> wallSprites;
+	std::vector<Sprite*> wallSprites;
 
 
 
 	// Decorations
-	olc::Sprite spriteBarell;
-	olc::Sprite spritePillar;
-	olc::Sprite spriteLamp;
-	olc::Sprite spriteExitSign;
+	Sprite spriteBarell;
+	Sprite spritePillar;
+	Sprite spriteLamp;
+	Sprite spriteExitSign;
 
 	// Enemies sprites
-	olc::Sprite spriteRobot1;
-	olc::Sprite spriteRobot2;
-	olc::Sprite spriteRobot3;
-	olc::Sprite spriteBoss;
+	Sprite spriteRobot1;
+	Sprite spriteRobot2;
+	Sprite spriteRobot3;
+	Sprite spriteBoss;
 
-	std::vector<olc::Sprite*> enemyIconSprites;
+	std::vector<Sprite*> enemyIconSprites;
 
 
 
 	// Item sprites
-	olc::Sprite spritesMedkit;
-	olc::Sprite itemAmmo9mm;
-	olc::Sprite itemAmmoShells;
-	olc::Sprite itemUzi;
-	olc::Sprite itemShotgun;
+	Sprite spritesMedkit;
+	Sprite itemAmmo9mm;
+	Sprite itemAmmoShells;
+	Sprite itemUzi;
+	Sprite itemShotgun;
 
-	std::vector<olc::Sprite*> itemIconSprites;
-
-
+	std::vector<Sprite*> itemIconSprites;
 
 
 
-	olc::Sprite* SampleIconFromSprite(olc::Sprite* sprite, int32_t x, int32_t y, int32_t w, int32_t h){
-		olc::Sprite* newIcon = new olc::Sprite(w, h);
+
+
+	Sprite* SampleIconFromSprite(Sprite* sprite, int32_t x, int32_t y, int32_t w, int32_t h) {
+		Sprite* newIcon = new Sprite(w, h);
 
 		for (int smplX = 0; smplX < w; smplX++) {
 			for (int smplY = 0; smplY < h; smplY++) {
-				olc::Pixel color = sprite->GetPixel(x + smplX, y + smplY);
-				//olc::Pixel color = sprite->GetPixel(int(1.0 * sprite->width / w * smplX), int(1.0 * sprite->height / h * smplY));
+				Color color = sprite->GetPixel(x + smplX, y + smplY);
+				//Color color = sprite->GetPixel(int(1.0 * sprite->width / w * smplX), int(1.0 * sprite->height / h * smplY));
 				newIcon->SetPixel(smplX, smplY, color);
 			}
 		}
@@ -2058,16 +2197,16 @@ public:
 		return(newIcon);
 	}
 
-	void SampleWallTexturesFromAtlas(olc::Sprite* atlas) {
+	void SampleWallTexturesFromAtlas(Sprite* atlas) {
 
 		int textureCount = (atlas->width / 64) * (atlas->height / 64);
 
 		for (int textureIdx = 0; textureIdx < textureCount; textureIdx++) {
-			olc::Sprite* wallTexture = new olc::Sprite(64, 64);
+			Sprite* wallTexture = new Sprite(64, 64);
 
 			for (int texX = 0; texX < 64; texX++) {
 				for (int texY = 0; texY < 64; texY++) {
-					olc::Pixel color = spriteWallAtlas.GetPixel((textureIdx * 64 + texX) % atlas->width, ((textureIdx / 4) * 64 + texY));
+					Color color = spriteWallAtlas.GetPixel((textureIdx * 64 + texX) % atlas->width, ((textureIdx / 4) * 64 + texY));
 					wallTexture->SetPixel(texX, texY, color);
 				}
 			}
@@ -2078,15 +2217,19 @@ public:
 
 
 
-	void LoadSprite(olc::Sprite* sprite, std::string file) {
-		olc::rcode loadStatus = sprite->LoadFromFile(file);
+	void LoadSprite(Sprite* sprite, std::string file) {
+		//olc::rcode loadStatus = sprite->LoadFromFile(file);
+		olc::rcode loadStatus = imageLoader.LoadImageResource(sprite, file);
+
 		if (loadStatus == olc::FAIL) { std::cout << "Sprite load failed : " << file << std::endl; return; }
 		if (loadStatus == olc::NO_FILE) { std::cout << "Sprite not found : " << file << std::endl; return; }
 	}
 
+
+
 	void LoadAssets() {
 
-		// UI
+		// UI 
 		LoadSprite(&spriteCursor, "gfx/cursor.png");
 
 		// Walls
@@ -2148,11 +2291,12 @@ public:
 
 
 
-	olc::Sprite* GetWallTexture(int idx) {
+
+	Sprite* GetWallTexture(int idx) {
 		return wallSprites[idx];
 	}
 
-	olc::Sprite* GetDecorationSprite(int idx) {
+	Sprite* GetDecorationSprite(int idx) {
 		switch (idx) {
 		case 0: return &spriteBarell;
 		case 1: return &spritePillar;
@@ -2162,7 +2306,7 @@ public:
 		}
 	}
 
-	olc::Sprite* GetEnemySprite(int idx) {
+	Sprite* GetEnemySprite(int idx) {
 		switch (idx) {
 		case 0: return &spriteRobot1;
 		case 1: return &spriteRobot2;
@@ -2172,7 +2316,7 @@ public:
 		}
 	}
 
-	olc::Sprite* GetItemSprite(int idx) {
+	Sprite* GetItemSprite(int idx) {
 		switch (idx) {
 		case 0: return &spritesMedkit;
 		case 1: return &itemAmmo9mm;
@@ -2183,7 +2327,7 @@ public:
 		}
 	}
 
-	olc::Sprite* GetWeaponSprite(int idx) {
+	Sprite* GetWeaponSprite(int idx) {
 		switch (idx) {
 		case 0: return &weaponPistol;
 		case 1: return &weaponUzi;
@@ -2194,52 +2338,23 @@ public:
 
 
 
-	olc::Sprite spriteEditorPlay;
-	olc::Sprite spriteEditorSave;
-	olc::Sprite spriteEditorLoad;
-	olc::Sprite spriteEditorSettings;
+	Sprite spriteEditorPlay;
+	Sprite spriteEditorSave;
+	Sprite spriteEditorLoad;
+	Sprite spriteEditorSettings;
 
-	olc::Sprite spriteEditorToolWall;
-	olc::Sprite spriteEditorToolItem;
-	olc::Sprite spriteEditorToolDecor;
-	olc::Sprite spriteEditorToolEnemy;
-	olc::Sprite spriteEditorToolEracer;
-	olc::Sprite spriteEditorToolZoom;
-	olc::Sprite spriteEditorToolGrid;
-	olc::Sprite spriteEditorToolPlayer;
-	olc::Sprite spriteEditorToolEndLevel;
-
-
-	// Drawing stuff
-
-	olc::Pixel DarkColor(olc::Pixel color, float amount = 0.5) {
-		olc::Pixel darkColor = olc::Pixel(color.r * amount, color.g * amount, color.b * amount);
-		return darkColor;
-	}
-
-	void DrawSpriteColorTransparent(int32_t x, int32_t y, olc::Sprite* sprite, olc::Pixel transparancyColor) {
-
-		if (sprite == nullptr)
-			return;
-
-		for (int32_t i = 0; i < sprite->width; i++)
-			for (int32_t j = 0; j < sprite->height; j++)
-				if (sprite->GetPixel(i, j) != transparancyColor)
-					Draw(x + i, y + j, sprite->GetPixel(i, j));
-	}
-
-	void DrawPartialSpriteColorTransparent(int32_t x, int32_t y, int32_t regionX, int32_t regionY, int32_t regionW, int32_t regionH, olc::Sprite* sprite, olc::Pixel transparancyColor) {
-
-		if (sprite == nullptr)
-			return;
-
-		for (int32_t i = regionX; i < regionX + regionW; i++)
-			for (int32_t j = regionY; j < regionY + regionH; j++)
-				if (sprite->GetPixel(i, j) != transparancyColor)
-					Draw(x + (i % regionW), y + (j % regionH), sprite->GetPixel(i, j));
-	}
+	Sprite spriteEditorToolWall;
+	Sprite spriteEditorToolItem;
+	Sprite spriteEditorToolDecor;
+	Sprite spriteEditorToolEnemy;
+	Sprite spriteEditorToolEracer;
+	Sprite spriteEditorToolZoom;
+	Sprite spriteEditorToolGrid;
+	Sprite spriteEditorToolPlayer;
+	Sprite spriteEditorToolEndLevel;
 
 
+	
 
 	//===============================================================================================================================
 	// UI
@@ -2250,9 +2365,7 @@ public:
 
 	public:
 
-		RaycastEngine* engineReference;
-
-		olc::vi2d position;
+		vi2d position;
 
 		uint32_t width;
 		uint32_t height;
@@ -2265,22 +2378,21 @@ public:
 		bool showBorder;
 		bool showBackground;
 
-		olc::Pixel colorBorder;
-		olc::Pixel colorBackground;
-		olc::Pixel colorText;
-		olc::Pixel colorHovered;
-		olc::Pixel colorPressed;
+		Color colorBorder;
+		Color colorBackground;
+		Color colorText;
+		Color colorHovered;
+		Color colorPressed;
 
 
 		std::string text;
 		std::string hoverText;
-		olc::Sprite* sprite;
+		Sprite* sprite;
 
 
 
-		Button(RaycastEngine* engine){
-			engineReference = engine;
-			position = olc::vi2d(0,0);
+		Button(){
+			position = vi2d(0,0);
 			width = 20;
 			height = 40;
 			enabled = true;
@@ -2288,18 +2400,17 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = "BTN";
 			hoverText = "";
 			sprite = nullptr;
 		}
 
-		Button(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, std::string txt){
-			engineReference = engine;
+		Button(vi2d pos, uint32_t w, uint32_t h, std::string txt){
 			position = pos;
 			width = w;
 			height = h;
@@ -2308,18 +2419,17 @@ public:
 			isHovered = false;
 			showBorder= true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = txt;
 			hoverText = "";
 			sprite = nullptr;
 		}
 
-		Button(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, olc::Sprite* img){
-			engineReference = engine;
+		Button(vi2d pos, uint32_t w, uint32_t h, Sprite* img){
 			position = pos;
 			width = w;
 			height = h;
@@ -2328,11 +2438,11 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = "";
 			hoverText = "";
 			sprite = img;
@@ -2348,13 +2458,13 @@ public:
 			isPressed = false;
 			isHovered = false;
 
-			olc::vi2d mousePos = olc::vi2d(engineReference->GetMouseX(), engineReference->GetMouseY());
+			vi2d mousePos = vi2d(GetMouseX(), GetMouseY());
 			if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
 			{
 				isHovered = true;
 			}
 
-			if (isHovered && engineReference->GetMouse(0).bPressed) {
+			if (isHovered && GetMouse(0).bPressed) {
 				isPressed = true;
 			}
 
@@ -2362,34 +2472,34 @@ public:
 			// Draw button
 
 			if (showBorder){
-				engineReference->DrawRect(position.x, position.y, width, height, colorBorder); // Border
+				DrawRect(position.x, position.y, width, height, colorBorder); // Border
 				if (showBackground){
-					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
+					FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
 				}
 			}else{
 				if (showBackground){
-					engineReference->FillRect(position.x, position.y, width, height, colorBackground); // Background
+					FillRect(position.x, position.y, width, height, colorBackground); // Background
 				}
 			}
 
 			// Draw selection
 			if (isHovered){
-				engineReference->DrawRect(position.x, position.y, width, height, colorHovered);
+				DrawRect(position.x, position.y, width, height, colorHovered);
 			}
 
 			// Draw content
 
 			if (text != ""){
-				engineReference->DrawString(position.x + 6, position.y + (height / 2 - 3), text, colorText);
+				DrawString(position.x + 6, position.y + (height / 2 - 3), text, colorText);
 			}
 
 			if (sprite != nullptr){
 				
 				for (int smplX = 0; smplX < width - 2; smplX++) {
 					for (int smplY = 0; smplY < height - 2; smplY++) {
-						olc::Pixel color = sprite->GetPixel(int( (1.0 * sprite->width / (width - 2)) * smplX), int( (1.0 * sprite->height / (height - 2)) * smplY));
-						if (color != olc::CYAN) {
-							engineReference->Draw(smplX + position.x + 1, smplY + position.y + 1, color);
+						Color color = sprite->GetPixel(int( (1.0 * sprite->width / (width - 2)) * smplX), int( (1.0 * sprite->height / (height - 2)) * smplY));
+						if (color != CYAN) {
+							Draw(smplX + position.x + 1, smplY + position.y + 1, color);
 						}
 					}
 				}
@@ -2406,9 +2516,7 @@ public:
 
 	public:
 
-		RaycastEngine* engineReference;
-
-		olc::vi2d position;
+		vi2d position;
 
 		uint32_t width;
 		uint32_t height;
@@ -2422,11 +2530,11 @@ public:
 		bool showBorder;
 		bool showBackground;
 
-		olc::Pixel colorBorder;
-		olc::Pixel colorBackground;
-		olc::Pixel colorText;
-		olc::Pixel colorHovered;
-		olc::Pixel colorPressed;
+		Color colorBorder;
+		Color colorBackground;
+		Color colorText;
+		Color colorHovered;
+		Color colorPressed;
 
 
 		std::string text;
@@ -2439,9 +2547,8 @@ public:
 
 
 
-		InputField(RaycastEngine* engine) {
-			engineReference = engine;
-			position = olc::vi2d(0, 0);
+		InputField() {
+			position = vi2d(0, 0);
 			width = 20;
 			height = 40;
 			enabled = true;
@@ -2449,19 +2556,18 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = "BTN";
 			hoverText = "";
 			charMaximum = 20;
 			allowOnlyNumbers = false;
 		}
 
-		InputField(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, std::string txt) {
-			engineReference = engine;
+		InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt) {
 			position = pos;
 			width = w;
 			height = h;
@@ -2470,19 +2576,18 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = txt;
 			hoverText = "";
 			charMaximum = 20;
 			allowOnlyNumbers = false;
 		}
 
-		InputField(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars) {
-			engineReference = engine;
+		InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars) {
 			position = pos;
 			width = w;
 			height = h;
@@ -2491,11 +2596,11 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorText = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorText = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			text = txt;
 			hoverText = "";
 			charMaximum = maxChars;
@@ -2514,16 +2619,16 @@ public:
 			isPressed = false;
 			isHovered = false;
 
-			olc::vi2d mousePos = olc::vi2d(engineReference->GetMouseX(), engineReference->GetMouseY());
+			vi2d mousePos = vi2d(GetMouseX(), GetMouseY());
 			if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
 			{
 				isHovered = true;
 			}
-			else if (isFocused && engineReference->GetMouse(0).bPressed) {
+			else if (isFocused && GetMouse(0).bPressed) {
 				isFocused = false;
 			}
 
-			if (isHovered && engineReference->GetMouse(0).bPressed) {
+			if (isHovered && GetMouse(0).bPressed) {
 				isPressed = true;
 			}
 
@@ -2532,29 +2637,29 @@ public:
 			// Draw field
 
 			if (showBorder) {
-				engineReference->DrawRect(position.x, position.y, width, height, colorBorder); // Border
+				DrawRect(position.x, position.y, width, height, colorBorder); // Border
 				if (showBackground) {
-					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
+					FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
 				}
 			}
 			else {
 				if (showBackground) {
-					engineReference->FillRect(position.x, position.y, width, height, colorBackground); // Background
+					FillRect(position.x, position.y, width, height, colorBackground); // Background
 				}
 			}
 
 			// Draw selection
 			if (isHovered) {
-				engineReference->DrawRect(position.x, position.y, width, height, colorHovered);
+				DrawRect(position.x, position.y, width, height, colorHovered);
 			}
 			if (isFocused) {
-				engineReference->DrawRect(position.x, position.y, width, height, olc::RED);
+				DrawRect(position.x, position.y, width, height, RED);
 			}
 
 			// Draw content
 
 			if (text != "") {
-				engineReference->DrawString(position.x + 6, position.y + (height / 2 - 3), text, colorText);
+				DrawString(position.x + 6, position.y + (height / 2 - 3), text, colorText);
 			}
 
 
@@ -2562,49 +2667,49 @@ public:
 
 			if (isFocused) {
 
-				if (engineReference->GetKey(olc::Key::BACK).bPressed) text = text.substr(0, text.length() - 1);
+				if (GetKey(Key::BACK).bPressed) text = text.substr(0, text.length() - 1);
 
 				if (text.length() < charMaximum) {
 
 					if (!allowOnlyNumbers) {
-						if (engineReference->GetKey(olc::Key::Q).bPressed) text += "Q";
-						if (engineReference->GetKey(olc::Key::W).bPressed) text += "W";
-						if (engineReference->GetKey(olc::Key::E).bPressed) text += "E";
-						if (engineReference->GetKey(olc::Key::R).bPressed) text += "R";
-						if (engineReference->GetKey(olc::Key::T).bPressed) text += "T";
-						if (engineReference->GetKey(olc::Key::Y).bPressed) text += "Y";
-						if (engineReference->GetKey(olc::Key::U).bPressed) text += "U";
-						if (engineReference->GetKey(olc::Key::I).bPressed) text += "I";
-						if (engineReference->GetKey(olc::Key::O).bPressed) text += "O";
-						if (engineReference->GetKey(olc::Key::P).bPressed) text += "P";
-						if (engineReference->GetKey(olc::Key::A).bPressed) text += "A";
-						if (engineReference->GetKey(olc::Key::S).bPressed) text += "S";
-						if (engineReference->GetKey(olc::Key::D).bPressed) text += "D";
-						if (engineReference->GetKey(olc::Key::F).bPressed) text += "F";
-						if (engineReference->GetKey(olc::Key::G).bPressed) text += "G";
-						if (engineReference->GetKey(olc::Key::H).bPressed) text += "H";
-						if (engineReference->GetKey(olc::Key::J).bPressed) text += "J";
-						if (engineReference->GetKey(olc::Key::K).bPressed) text += "K";
-						if (engineReference->GetKey(olc::Key::L).bPressed) text += "L";
-						if (engineReference->GetKey(olc::Key::Z).bPressed) text += "Z";
-						if (engineReference->GetKey(olc::Key::X).bPressed) text += "X";
-						if (engineReference->GetKey(olc::Key::C).bPressed) text += "C";
-						if (engineReference->GetKey(olc::Key::V).bPressed) text += "V";
-						if (engineReference->GetKey(olc::Key::B).bPressed) text += "B";
-						if (engineReference->GetKey(olc::Key::N).bPressed) text += "N";
-						if (engineReference->GetKey(olc::Key::M).bPressed) text += "M";
+						if (GetKey(Key::Q).bPressed) text += "Q";
+						if (GetKey(Key::W).bPressed) text += "W";
+						if (GetKey(Key::E).bPressed) text += "E";
+						if (GetKey(Key::R).bPressed) text += "R";
+						if (GetKey(Key::T).bPressed) text += "T";
+						if (GetKey(Key::Y).bPressed) text += "Y";
+						if (GetKey(Key::U).bPressed) text += "U";
+						if (GetKey(Key::I).bPressed) text += "I";
+						if (GetKey(Key::O).bPressed) text += "O";
+						if (GetKey(Key::P).bPressed) text += "P";
+						if (GetKey(Key::A).bPressed) text += "A";
+						if (GetKey(Key::S).bPressed) text += "S";
+						if (GetKey(Key::D).bPressed) text += "D";
+						if (GetKey(Key::F).bPressed) text += "F";
+						if (GetKey(Key::G).bPressed) text += "G";
+						if (GetKey(Key::H).bPressed) text += "H";
+						if (GetKey(Key::J).bPressed) text += "J";
+						if (GetKey(Key::K).bPressed) text += "K";
+						if (GetKey(Key::L).bPressed) text += "L";
+						if (GetKey(Key::Z).bPressed) text += "Z";
+						if (GetKey(Key::X).bPressed) text += "X";
+						if (GetKey(Key::C).bPressed) text += "C";
+						if (GetKey(Key::V).bPressed) text += "V";
+						if (GetKey(Key::B).bPressed) text += "B";
+						if (GetKey(Key::N).bPressed) text += "N";
+						if (GetKey(Key::M).bPressed) text += "M";
 					}
 
-					if (engineReference->GetKey(olc::Key::K0).bPressed) text += "0";
-					if (engineReference->GetKey(olc::Key::K1).bPressed) text += "1";
-					if (engineReference->GetKey(olc::Key::K2).bPressed) text += "2";
-					if (engineReference->GetKey(olc::Key::K3).bPressed) text += "3";
-					if (engineReference->GetKey(olc::Key::K4).bPressed) text += "4";
-					if (engineReference->GetKey(olc::Key::K5).bPressed) text += "5";
-					if (engineReference->GetKey(olc::Key::K6).bPressed) text += "6";
-					if (engineReference->GetKey(olc::Key::K7).bPressed) text += "7";
-					if (engineReference->GetKey(olc::Key::K8).bPressed) text += "8";
-					if (engineReference->GetKey(olc::Key::K9).bPressed) text += "9";
+					if (GetKey(Key::K0).bPressed) text += "0";
+					if (GetKey(Key::K1).bPressed) text += "1";
+					if (GetKey(Key::K2).bPressed) text += "2";
+					if (GetKey(Key::K3).bPressed) text += "3";
+					if (GetKey(Key::K4).bPressed) text += "4";
+					if (GetKey(Key::K5).bPressed) text += "5";
+					if (GetKey(Key::K6).bPressed) text += "6";
+					if (GetKey(Key::K7).bPressed) text += "7";
+					if (GetKey(Key::K8).bPressed) text += "8";
+					if (GetKey(Key::K9).bPressed) text += "9";
 				}
 			}
 		}
@@ -2615,9 +2720,7 @@ public:
 	class Slider {
 	
 	public :
-		RaycastEngine* engineReference;
-
-		olc::vi2d position;
+		vi2d position;
 
 		uint32_t width;
 		uint32_t height;
@@ -2631,40 +2734,38 @@ public:
 		bool showBorder;
 		bool showBackground;
 
-		olc::Pixel colorBorder;
-		olc::Pixel colorBackground;
-		olc::Pixel colorHovered;
-		olc::Pixel colorPressed;
+		Color colorBorder;
+		Color colorBackground;
+		Color colorHovered;
+		Color colorPressed;
 
-		olc::Pixel colorSlider;
-		olc::Pixel colorSliderLine;
+		Color colorSlider;
+		Color colorSliderLine;
 
 		std::string hoverText;
 
 		float value;
 
 
-		Slider(RaycastEngine* engine) {
-			engineReference = engine;
-			position = olc::vi2d(0, 0);
+		Slider() {
+			position = vi2d(0, 0);
 			width = 20;
 			height = 40;
 			isPressed = false;
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorSlider = olc::WHITE;
-			colorSliderLine = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorSlider = WHITE;
+			colorSliderLine = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			hoverText = "";
 			value = 0.5;
 		}
 
-		Slider(RaycastEngine* engine, olc::vi2d pos, uint32_t w, uint32_t h) {
-			engineReference = engine;
+		Slider(vi2d pos, uint32_t w, uint32_t h) {
 			position = pos;
 			width = w;
 			height = h;
@@ -2672,12 +2773,12 @@ public:
 			isHovered = false;
 			showBorder = true;
 			showBackground = true;
-			colorBorder = olc::GREY;
-			colorBackground = olc::BLACK;
-			colorSlider = olc::WHITE;
-			colorSliderLine = olc::WHITE;
-			colorHovered = olc::YELLOW;
-			colorPressed = olc::DARK_YELLOW;
+			colorBorder = GREY;
+			colorBackground = BLACK;
+			colorSlider = WHITE;
+			colorSliderLine = WHITE;
+			colorHovered = YELLOW;
+			colorPressed = DARK_YELLOW;
 			hoverText = "";
 			value = 0.5;
 		}
@@ -2695,20 +2796,20 @@ public:
 			isPressed = false;
 			isHovered = false;
 
-			olc::vi2d mousePos = olc::vi2d(engineReference->GetMouseX(), engineReference->GetMouseY());
+			vi2d mousePos = vi2d(GetMouseX(), GetMouseY());
 			if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
 			{
 				isHovered = true;
 			}
 
-			if (isHovered && engineReference->GetMouse(0).bPressed) {
+			if (isHovered && GetMouse(0).bPressed) {
 				isPressed = true;
 			}
 
-			if (isHovered && engineReference->GetMouse(0).bHeld) {
+			if (isHovered && GetMouse(0).bHeld) {
 				isHeld = true;
 
-				int mouseRelPos = engineReference->GetMouseX() - position.x;
+				int mouseRelPos = GetMouseX() - position.x;
 				value = mouseRelPos * 1.0 / width;
 
 				if (value < 0.05) {
@@ -2721,28 +2822,28 @@ public:
 			// Draw field
 
 			if (showBorder) {
-				engineReference->DrawRect(position.x, position.y, width, height, colorBorder); // Border
+				DrawRect(position.x, position.y, width, height, colorBorder); // Border
 				if (showBackground) {
-					engineReference->FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
+					FillRect(position.x + 1, position.y + 1, width - 1, height - 1, colorBackground); // Background
 				}
 			}
 			else {
 				if (showBackground) {
-					engineReference->FillRect(position.x, position.y, width, height, colorBackground); // Background
+					FillRect(position.x, position.y, width, height, colorBackground); // Background
 				}
 			}
 
 			// Draw selection
 			if (isHovered) {
-				engineReference->DrawRect(position.x, position.y, width, height, colorHovered);
+				DrawRect(position.x, position.y, width, height, colorHovered);
 			}
 
 
 			// Draw content
-			engineReference->FillRect(position.x, position.y + height / 2 - 2, width, 4, colorSliderLine); // Slider line
+			FillRect(position.x, position.y + height / 2 - 2, width, 4, colorSliderLine); // Slider line
 
-			engineReference->FillRect(position.x + value * width, position.y, 5, height, olc::BLACK); // Slider background
-			engineReference->DrawRect(position.x + value * width, position.y, 5, height, colorSlider); // Slider
+			FillRect(position.x + value * width, position.y, 5, height, BLACK); // Slider background
+			DrawRect(position.x + value * width, position.y, 5, height, colorSlider); // Slider
 			
 
 
@@ -2791,7 +2892,7 @@ public:
 					128,
 					128,
 					GetWeaponSprite(player.activeWeapon),
-					olc::CYAN
+					CYAN
 				);
 			}
 			else {
@@ -2804,7 +2905,7 @@ public:
 					128,
 					128,
 					GetWeaponSprite(player.activeWeapon),
-					olc::CYAN
+					CYAN
 				);
 			}
 
@@ -2817,51 +2918,49 @@ public:
 		// Death screen
 
 		if (!player.isAlive) {
-			SetPixelMode(olc::Pixel::Mode::ALPHA);
-			FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::Pixel(255, 0, 0, 150));
-			SetPixelMode(olc::Pixel::Mode::NORMAL);
+			FillRect(0, 0, ScreenWidth(), ScreenHeight(), Color(255, 0, 0, 150));
 		}
 
 
 
 		// Draw crosshair -----------------------------
 
-		Draw(ScreenWidth() / 2, ScreenHeight() / 2, olc::WHITE);
+		Draw(ScreenWidth() / 2, ScreenHeight() / 2, WHITE);
 
 
 		// Draw player status -----------------------------
 
-		FillRect(5, 165, 60, 30, olc::BLACK);
-		DrawLine(4, 166, 4, 195, olc::YELLOW);
-		DrawLine(4, 195, 64, 195, olc::YELLOW);
-		DrawString(9, 161, "Health", olc::WHITE);
-		DrawString(11, 176, std::to_string(player.health), olc::VERY_DARK_YELLOW, 2);
-		DrawString(10, 175, std::to_string(player.health), olc::YELLOW, 2);
+		FillRect(5, 165, 60, 30, BLACK);
+		DrawLine(4, 166, 4, 195, YELLOW);
+		DrawLine(4, 195, 64, 195, YELLOW);
+		DrawString(9, 161, "Health", WHITE);
+		DrawString(11, 176, std::to_string(player.health), VERY_DARK_YELLOW, 2);
+		DrawString(10, 175, std::to_string(player.health), YELLOW, 2);
 
-		FillRect(255, 165, 60, 30, olc::BLACK);
-		DrawLine(315, 166, 315, 195, olc::YELLOW);
-		DrawLine(256, 195, 315, 195, olc::YELLOW);
-		DrawString(280, 161, "Ammo", olc::WHITE);
-		DrawString(266, 176, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::VERY_DARK_YELLOW, 2);
-		DrawString(265, 175, std::to_string(weapons[player.activeWeapon].currentAmmo), olc::YELLOW, 2);
+		FillRect(255, 165, 60, 30, BLACK);
+		DrawLine(315, 166, 315, 195, YELLOW);
+		DrawLine(256, 195, 315, 195, YELLOW);
+		DrawString(280, 161, "Ammo", WHITE);
+		DrawString(266, 176, std::to_string(weapons[player.activeWeapon].currentAmmo), VERY_DARK_YELLOW, 2);
+		DrawString(265, 175, std::to_string(weapons[player.activeWeapon].currentAmmo), YELLOW, 2);
 
 		// Draw info logs -----------------------------
 
 
 		if (infoLogTimer0 > 0) {
 			infoLogTimer0 -= fElapsedTime;
-			DrawString(6, 6, infoLog0, olc::BLACK);
-			DrawString(5, 5, infoLog0, olc::YELLOW);
+			DrawString(6, 6, infoLog0, BLACK);
+			DrawString(5, 5, infoLog0, YELLOW);
 		}
 		if (infoLogTimer1 > 0) {
 			infoLogTimer1 -= fElapsedTime;
-			DrawString(6, 16, infoLog1, olc::BLACK);
-			DrawString(5, 15, infoLog1, olc::YELLOW);
+			DrawString(6, 16, infoLog1, BLACK);
+			DrawString(5, 15, infoLog1, YELLOW);
 		}
 		if (infoLogTimer2 > 0) {
 			infoLogTimer2 -= fElapsedTime;
-			DrawString(6, 26, infoLog2, olc::BLACK);
-			DrawString(5, 25, infoLog2, olc::YELLOW);
+			DrawString(6, 26, infoLog2, BLACK);
+			DrawString(5, 25, infoLog2, YELLOW);
 		}
 
 
@@ -2869,14 +2968,14 @@ public:
 
 		if (infoEffectTimer > 0) {
 			infoEffectTimer -= fElapsedTime;
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::DARK_YELLOW);
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, DARK_YELLOW);
 		}
 
 		// Draw damage effect -----------------------------
 
 		if (player.damageEffectTimer > 0) {
 			player.damageEffectTimer -= fElapsedTime;
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::RED);
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, RED);
 		}
 
 	}
@@ -2899,22 +2998,22 @@ public:
 			}
 
 
-			DrawString(72, 22, "Pause", olc::VERY_DARK_YELLOW, 3);
-			DrawString(70, 20, "Pause", olc::YELLOW, 3);
+			DrawString(72, 22, "Pause", VERY_DARK_YELLOW, 3);
+			DrawString(70, 20, "Pause", YELLOW, 3);
 
-			DrawString(62, 67, "Restart", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 65, "Restart", olc::YELLOW, 2);
+			DrawString(62, 67, "Restart", VERY_DARK_YELLOW, 2);
+			DrawString(60, 65, "Restart", YELLOW, 2);
 
-			DrawString(62, 87, "Settings", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 85, "Settings", olc::YELLOW, 2);
+			DrawString(62, 87, "Settings", VERY_DARK_YELLOW, 2);
+			DrawString(60, 85, "Settings", YELLOW, 2);
 
-			DrawString(62, 107, "Exit to menu", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 105, "Exit to menu", olc::YELLOW, 2);
+			DrawString(62, 107, "Exit to menu", VERY_DARK_YELLOW, 2);
+			DrawString(60, 105, "Exit to menu", YELLOW, 2);
 
 
 			if (menuItemSelected != -1) {
-				DrawString(42, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(40, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+				DrawString(42, 67 + 20 * menuItemSelected, ">", VERY_DARK_YELLOW, 2);
+				DrawString(40, 65 + 20 * menuItemSelected, ">", YELLOW, 2);
 			}
 
 
@@ -2950,28 +3049,28 @@ public:
 				menuItemSelected = 0;
 			}
 
-			DrawString(32, 22, "SETTINGS", olc::VERY_DARK_YELLOW, 2);
-			DrawString(30, 20, "SETTINGS", olc::YELLOW, 2);
+			DrawString(32, 22, "SETTINGS", VERY_DARK_YELLOW, 2);
+			DrawString(30, 20, "SETTINGS", YELLOW, 2);
 
-			DrawString(62, 47, "<- Back", olc::VERY_DARK_RED, 2);
-			DrawString(60, 45, "<- Back", olc::RED, 2);
-
-
+			DrawString(62, 47, "<- Back", VERY_DARK_RED, 2);
+			DrawString(60, 45, "<- Back", RED, 2);
 
 
-			DrawString(62, 82, "MIDI", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 80, "MIDI", olc::YELLOW, 2);
 
-			DrawString(62, 112, "FX", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 110, "FX", olc::YELLOW, 2);
 
-			DrawString(62, 142, "M SEN", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 140, "M SEN", olc::YELLOW, 2);
+			DrawString(62, 82, "MIDI", VERY_DARK_YELLOW, 2);
+			DrawString(60, 80, "MIDI", YELLOW, 2);
+
+			DrawString(62, 112, "FX", VERY_DARK_YELLOW, 2);
+			DrawString(60, 110, "FX", YELLOW, 2);
+
+			DrawString(62, 142, "M SEN", VERY_DARK_YELLOW, 2);
+			DrawString(60, 140, "M SEN", YELLOW, 2);
 
 
 			midiVolumeSlider.showBorder = false;
-			midiVolumeSlider.colorSlider = olc::YELLOW;
-			midiVolumeSlider.colorSliderLine = olc::DARK_YELLOW;
+			midiVolumeSlider.colorSlider = YELLOW;
+			midiVolumeSlider.colorSliderLine = DARK_YELLOW;
 			midiVolumeSlider.showBackground = false;
 			midiVolumeSlider.Update();
 
@@ -2982,8 +3081,8 @@ public:
 
 
 			fxVolumeSlider.showBorder = false;
-			fxVolumeSlider.colorSlider = olc::YELLOW;
-			fxVolumeSlider.colorSliderLine = olc::DARK_YELLOW;
+			fxVolumeSlider.colorSlider = YELLOW;
+			fxVolumeSlider.colorSliderLine = DARK_YELLOW;
 			fxVolumeSlider.showBackground = false;
 			fxVolumeSlider.Update();
 
@@ -2995,8 +3094,8 @@ public:
 
 
 			mouseSensSlider.showBorder = false;
-			mouseSensSlider.colorSlider = olc::YELLOW;
-			mouseSensSlider.colorSliderLine = olc::DARK_YELLOW;
+			mouseSensSlider.colorSlider = YELLOW;
+			mouseSensSlider.colorSliderLine = DARK_YELLOW;
 			mouseSensSlider.showBackground = false;
 			mouseSensSlider.Update();
 
@@ -3005,8 +3104,8 @@ public:
 
 
 			if (menuItemSelected != -1) {
-				DrawString(42, 47 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(40, 45 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+				DrawString(42, 47 + 20 * menuItemSelected, ">", VERY_DARK_YELLOW, 2);
+				DrawString(40, 45 + 20 * menuItemSelected, ">", YELLOW, 2);
 			}
 
 
@@ -3024,44 +3123,43 @@ public:
 
 	void DrawEndScreen() {
 
-		FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
-		DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::YELLOW);
+		FillRect(0, 0, ScreenWidth(), ScreenHeight(), BLACK);
+		DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, YELLOW);
 
-		DrawString(32, 22, "THE END", olc::VERY_DARK_YELLOW, 2);
-		DrawString(30, 20, "THE END", olc::YELLOW, 2);
+		DrawString(32, 22, "THE END", VERY_DARK_YELLOW, 2);
+		DrawString(30, 20, "THE END", YELLOW, 2);
 
-		DrawString(10, 60, "You did it! The terrible machine is", olc::WHITE, 1);
-		DrawString(10, 70, "off and everything will be back to", olc::WHITE, 1);
-		DrawString(10, 80, "normal soon. You smell burnt plastic", olc::WHITE, 1);
-		DrawString(10, 90, "and look at the remains of a once", olc::WHITE, 1);
-		DrawString(10, 100, "great invention. It remains only ", olc::WHITE, 1);
-		DrawString(10, 110, "to deal with the hordes of already", olc::WHITE, 1);
-		DrawString(10, 120, "created machines in other parts", olc::WHITE, 1);
-		DrawString(10, 130, "of the complex.", olc::WHITE, 1);
-		DrawString(5, 150, "You can test yourself in user made maps!", olc::WHITE, 1);
+		DrawString(10, 60, "You did it! The terrible machine is", WHITE, 1);
+		DrawString(10, 70, "off and everything will be back to", WHITE, 1);
+		DrawString(10, 80, "normal soon. You smell burnt plastic", WHITE, 1);
+		DrawString(10, 90, "and look at the remains of a once", WHITE, 1);
+		DrawString(10, 100, "great invention. It remains only ", WHITE, 1);
+		DrawString(10, 110, "to deal with the hordes of already", WHITE, 1);
+		DrawString(10, 120, "created machines in other parts", WHITE, 1);
+		DrawString(10, 130, "of the complex.", WHITE, 1);
+		DrawString(5, 150, "You can test yourself in user made maps!", WHITE, 1);
 
 	}
 
-
 	void DrawLoreScreen() {
 
-		FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
-		DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::YELLOW);
+		FillRect(0, 0, ScreenWidth(), ScreenHeight(), BLACK);
+		DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, YELLOW);
 
-		DrawString(32, 22, "STORY", olc::VERY_DARK_YELLOW, 2);
-		DrawString(30, 20, "STORY", olc::YELLOW, 2);
+		DrawString(32, 22, "STORY", VERY_DARK_YELLOW, 2);
+		DrawString(30, 20, "STORY", YELLOW, 2);
 
-		DrawString(10, 60, "You are in a secret complex for the", olc::WHITE, 1);
-		DrawString(10, 70, "development	of new technologies.", olc::WHITE, 1);
-		DrawString(10, 80, "You are one of the volunteers", olc::WHITE, 1);
-		DrawString(10, 90, "for the human cryofreezing program.", olc::WHITE, 1);
-		DrawString(10, 100, "You should have been defrosted after", olc::WHITE, 1);
-		DrawString(10, 110, "10 years and after waking up you", olc::WHITE, 1);
-		DrawString(10, 120, "feel that something is wrong around", olc::WHITE, 1);
-		DrawString(10, 130, "you. There are only hostile machines", olc::WHITE, 1);
-		DrawString(10, 140, "around. You need to figure out who", olc::WHITE, 1);
-		DrawString(10, 150, "or WHAT is behind this.", olc::WHITE, 1);
-		DrawString(5, 170, "PRESS SPACE OR E TO CONTINUE", olc::WHITE, 1);
+		DrawString(10, 60, "You are in a secret complex for the", WHITE, 1);
+		DrawString(10, 70, "development	of new technologies.", WHITE, 1);
+		DrawString(10, 80, "You are one of the volunteers", WHITE, 1);
+		DrawString(10, 90, "for the human cryofreezing program.", WHITE, 1);
+		DrawString(10, 100, "You should have been defrosted after", WHITE, 1);
+		DrawString(10, 110, "10 years and after waking up you", WHITE, 1);
+		DrawString(10, 120, "feel that something is wrong around", WHITE, 1);
+		DrawString(10, 130, "you. There are only hostile machines", WHITE, 1);
+		DrawString(10, 140, "around. You need to figure out who", WHITE, 1);
+		DrawString(10, 150, "or WHAT is behind this.", WHITE, 1);
+		DrawString(5, 170, "PRESS SPACE OR E TO CONTINUE", WHITE, 1);
 
 
 	}
@@ -3077,9 +3175,9 @@ public:
 	int mapPageCount = 0;
 
 
-	Slider midiVolumeSlider = Slider(this, olc::vi2d(150, 80), 130, 20);
-	Slider fxVolumeSlider = Slider(this, olc::vi2d(150, 110), 130, 20);
-	Slider mouseSensSlider = Slider(this, olc::vi2d(150, 140), 130, 20);
+	Slider midiVolumeSlider = Slider(vi2d(150, 80), 130, 20);
+	Slider fxVolumeSlider = Slider(vi2d(150, 110), 130, 20);
+	Slider mouseSensSlider = Slider(vi2d(150, 140), 130, 20);
 
 
 	void DrawTitleScreen(float fElapsedTime) {
@@ -3108,33 +3206,33 @@ public:
 			}
 
 
-			FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::YELLOW);
+			FillRect(0, 0, ScreenWidth(), ScreenHeight(), BLACK);
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, YELLOW);
 
 
 
-			DrawString(32, 22, "OMNIVERSE MACKINA", olc::VERY_DARK_YELLOW, 2);
-			DrawString(30, 20, "OMNIVERSE MACKINA", olc::YELLOW, 2);
+			DrawString(32, 22, "OMNIVERSE MACKINA", VERY_DARK_YELLOW, 2);
+			DrawString(30, 20, "OMNIVERSE MACKINA", YELLOW, 2);
 
-			DrawString(62, 67, "New game", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 65, "New game", olc::YELLOW, 2);
+			DrawString(62, 67, "New game", VERY_DARK_YELLOW, 2);
+			DrawString(60, 65, "New game", YELLOW, 2);
 					   
-			DrawString(62, 87, "Select map", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 85, "Select map", olc::YELLOW, 2);
+			DrawString(62, 87, "Select map", VERY_DARK_YELLOW, 2);
+			DrawString(60, 85, "Select map", YELLOW, 2);
 					   
-			DrawString(62, 107, "Map editor", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 105, "Map editor", olc::YELLOW, 2);
+			DrawString(62, 107, "Map editor", VERY_DARK_YELLOW, 2);
+			DrawString(60, 105, "Map editor", YELLOW, 2);
 					   
-			DrawString(62, 127, "Settings", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 125, "Settings", olc::YELLOW, 2);
+			DrawString(62, 127, "Settings", VERY_DARK_YELLOW, 2);
+			DrawString(60, 125, "Settings", YELLOW, 2);
 					   
-			DrawString(62, 147, "Exit", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 145, "Exit", olc::YELLOW, 2);
+			DrawString(62, 147, "Exit", VERY_DARK_YELLOW, 2);
+			DrawString(60, 145, "Exit", YELLOW, 2);
 
 
 			if (menuItemSelected != -1) {
-				DrawString(42, 67 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(40, 65 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+				DrawString(42, 67 + 20 * menuItemSelected, ">", VERY_DARK_YELLOW, 2);
+				DrawString(40, 65 + 20 * menuItemSelected, ">", YELLOW, 2);
 			}
 
 
@@ -3215,38 +3313,38 @@ public:
 			}
 
 
-			FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::YELLOW);
+			FillRect(0, 0, ScreenWidth(), ScreenHeight(), BLACK);
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, YELLOW);
 
 
 
-			DrawString(32, 22, "SELECT MAP", olc::VERY_DARK_YELLOW, 2);
-			DrawString(30, 20, "SELECT MAP", olc::YELLOW, 2);
+			DrawString(32, 22, "SELECT MAP", VERY_DARK_YELLOW, 2);
+			DrawString(30, 20, "SELECT MAP", YELLOW, 2);
 
-			DrawString(62, 47, "<- Back", olc::VERY_DARK_RED, 2);
-			DrawString(60, 45, "<- Back", olc::RED, 2);
+			DrawString(62, 47, "<- Back", VERY_DARK_RED, 2);
+			DrawString(60, 45, "<- Back", RED, 2);
 
-			DrawString(62, 67, "Prev page", olc::VERY_DARK_RED, 2);
-			DrawString(60, 65, "Prev page", olc::RED, 2);
+			DrawString(62, 67, "Prev page", VERY_DARK_RED, 2);
+			DrawString(60, 65, "Prev page", RED, 2);
 
 			for (int mapString = 0; mapString < 4; mapString++) {
 
 				if (mapString + mapSelectPage * 4 < mapsToSelect.size()) {
 					std::string mapName = mapsToSelect[mapString + mapSelectPage * 4].substr(5, mapsToSelect[mapString + mapSelectPage * 4].length() - 9);
 
-					DrawString(62, 87 + mapString * 20, mapName, olc::VERY_DARK_YELLOW, 2);
-					DrawString(60, 85 + mapString * 20, mapName, olc::YELLOW, 2);
+					DrawString(62, 87 + mapString * 20, mapName, VERY_DARK_YELLOW, 2);
+					DrawString(60, 85 + mapString * 20, mapName, YELLOW, 2);
 				}
 				
 			}
 
-			DrawString(62, 167, "Next page", olc::VERY_DARK_RED, 2);
-			DrawString(60, 165, "Next page", olc::RED, 2);
+			DrawString(62, 167, "Next page", VERY_DARK_RED, 2);
+			DrawString(60, 165, "Next page", RED, 2);
 
 
 			if (menuItemSelected != -1) {
-				DrawString(42, 47 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(40, 45 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+				DrawString(42, 47 + 20 * menuItemSelected, ">", VERY_DARK_YELLOW, 2);
+				DrawString(40, 45 + 20 * menuItemSelected, ">", YELLOW, 2);
 			}
 
 
@@ -3324,36 +3422,36 @@ public:
 
 			int menuItemSelected = -1;
 
-			FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
-			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, olc::YELLOW);
+			FillRect(0, 0, ScreenWidth(), ScreenHeight(), BLACK);
+			DrawRect(0, 0, ScreenWidth() - 1, ScreenHeight() - 1, YELLOW);
 
 
 			if (GetMouseY() > 47 && GetMouseY() <= 67) {
 				menuItemSelected = 0;
 			}
 
-			DrawString(32, 22, "SETTINGS", olc::VERY_DARK_YELLOW, 2);
-			DrawString(30, 20, "SETTINGS", olc::YELLOW, 2);
+			DrawString(32, 22, "SETTINGS", VERY_DARK_YELLOW, 2);
+			DrawString(30, 20, "SETTINGS", YELLOW, 2);
 
-			DrawString(62, 47, "<- Back", olc::VERY_DARK_RED, 2);
-			DrawString(60, 45, "<- Back", olc::RED, 2);
-
-
+			DrawString(62, 47, "<- Back", VERY_DARK_RED, 2);
+			DrawString(60, 45, "<- Back", RED, 2);
 
 
-			DrawString(62, 82, "MIDI", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 80, "MIDI", olc::YELLOW, 2);
 
-			DrawString(62, 112, "FX", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 110, "FX", olc::YELLOW, 2);
 
-			DrawString(62, 142, "M SEN", olc::VERY_DARK_YELLOW, 2);
-			DrawString(60, 140, "M SEN", olc::YELLOW, 2);
+			DrawString(62, 82, "MIDI", VERY_DARK_YELLOW, 2);
+			DrawString(60, 80, "MIDI", YELLOW, 2);
+
+			DrawString(62, 112, "FX", VERY_DARK_YELLOW, 2);
+			DrawString(60, 110, "FX", YELLOW, 2);
+
+			DrawString(62, 142, "M SEN", VERY_DARK_YELLOW, 2);
+			DrawString(60, 140, "M SEN", YELLOW, 2);
 
 
 			midiVolumeSlider.showBorder = false;
-			midiVolumeSlider.colorSlider = olc::YELLOW;
-			midiVolumeSlider.colorSliderLine = olc::DARK_YELLOW;
+			midiVolumeSlider.colorSlider = YELLOW;
+			midiVolumeSlider.colorSliderLine = DARK_YELLOW;
 			midiVolumeSlider.Update();
 
 			if (midiVolumeSlider.isPressed) {
@@ -3363,8 +3461,8 @@ public:
 
 
 			fxVolumeSlider.showBorder = false;
-			fxVolumeSlider.colorSlider = olc::YELLOW;
-			fxVolumeSlider.colorSliderLine = olc::DARK_YELLOW;
+			fxVolumeSlider.colorSlider = YELLOW;
+			fxVolumeSlider.colorSliderLine = DARK_YELLOW;
 			fxVolumeSlider.Update();
 
 			if (fxVolumeSlider.isPressed) {
@@ -3374,8 +3472,8 @@ public:
 
 
 			mouseSensSlider.showBorder = false;
-			mouseSensSlider.colorSlider = olc::YELLOW;
-			mouseSensSlider.colorSliderLine = olc::DARK_YELLOW;
+			mouseSensSlider.colorSlider = YELLOW;
+			mouseSensSlider.colorSliderLine = DARK_YELLOW;
 			mouseSensSlider.Update();
 
 			mouseSensitivity = mouseSensSlider.value * 2;
@@ -3383,8 +3481,8 @@ public:
 
 
 			if (menuItemSelected != -1) {
-				DrawString(42, 47 + 20 * menuItemSelected, ">", olc::VERY_DARK_YELLOW, 2);
-				DrawString(40, 45 + 20 * menuItemSelected, ">", olc::YELLOW, 2);
+				DrawString(42, 47 + 20 * menuItemSelected, ">", VERY_DARK_YELLOW, 2);
+				DrawString(40, 45 + 20 * menuItemSelected, ">", YELLOW, 2);
 			}
 
 
@@ -3407,45 +3505,25 @@ public:
 	//===============================================================================================================================
 
 
-	// For ray collision calculations
 
-	bool LineIntersection(olc::vf2d ln1pnt1, olc::vf2d ln1pnt2, olc::vf2d ln2pnt1, olc::vf2d ln2pnt2){
-		
-		olc::vf2d line1 = ln1pnt2 - ln1pnt1;
-		olc::vf2d line2 = ln2pnt2 - ln2pnt1;
-
-		float cross1 = line1.cross(ln2pnt1 - ln1pnt1);
-		float cross2 = line1.cross(ln2pnt2 - ln1pnt1);
-
-		if ( copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0 )
-			return false;
-	
-		cross1 = line2.cross(ln1pnt1 - ln2pnt1);
-		cross2 = line2.cross(ln1pnt2 - ln2pnt1);
-
-		if ( copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0 )
-			return false;
-
-		return true;
-	}
 
 
 	//x-coordinate in camera space,  [0 - 319] pixels -> [-1 - 1]
-	float ShootRaycastRay(olc::vf2d from, olc::vf2d rayDir) {
+	float ShootRaycastRay(vf2d from, vf2d rayDir) {
 
 		//which box of the map we're in
-		olc::vi2d mapPosition = from;
+		vi2d mapPosition = from;
 
 		//length of ray from current position to next x or y-side
-		olc::vf2d sideDist;
+		vf2d sideDist;
 
 		//length of ray from one x or y-side to next x or y-side
-		olc::vf2d deltaDist = olc::vf2d(std::abs(1 / rayDir.x), std::abs(1 / rayDir.y));
+		vf2d deltaDist = vf2d(std::abs(1 / rayDir.x), std::abs(1 / rayDir.y));
 
 		float perpWallDist;
 
 		//what direction to step in x or y-direction (either +1 or -1)
-		olc::vi2d step;
+		vi2d step;
 
 
 		int hit = 0; //was there a wall hit?
@@ -3509,6 +3587,27 @@ public:
 
 
 
+	// For ray collision calculations
+	bool RaycastEngine::LineIntersection(vf2d ln1pnt1, vf2d ln1pnt2, vf2d ln2pnt1, vf2d ln2pnt2) {
+
+		vf2d line1 = ln1pnt2 - ln1pnt1;
+		vf2d line2 = ln2pnt2 - ln2pnt1;
+
+		float cross1 = line1.cross(ln2pnt1 - ln1pnt1);
+		float cross2 = line1.cross(ln2pnt2 - ln1pnt1);
+
+		if (copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0)
+			return false;
+
+		cross1 = line2.cross(ln1pnt1 - ln2pnt1);
+		cross2 = line2.cross(ln1pnt2 - ln2pnt1);
+
+		if (copysign(1, cross1) == copysign(1, cross2) || cross1 == 0 || cross2 == 0)
+			return false;
+
+		return true;
+	}
+
 
 
 
@@ -3546,9 +3645,9 @@ public:
 		for (int y = ScreenHeight() / 2; y < ScreenHeight(); y++)
 		{
 			// rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
-			olc::vf2d rayDir0 = player.direction - player.viewPlane;
+			vf2d rayDir0 = player.direction - player.viewPlane;
 
-			olc::vf2d rayDir1 = player.direction + player.viewPlane;
+			vf2d rayDir1 = player.direction + player.viewPlane;
 
 
 			// Current y position compared to the center of the screen (the horizon)
@@ -3601,8 +3700,8 @@ public:
 
 				//if (!drawnPixels[y * ScreenWidth() + x]) {
 					// floor
-					olc::Pixel color = GetWallTexture(worldMapFloorTxtr)->Sample(floorX - cellX + 0.05, floorY - cellY + 0.05);
-					color = DarkColor(color, shading);
+					Color color = GetWallTexture(worldMapFloorTxtr)->Sample(floorX - cellX + 0.05, floorY - cellY + 0.05);
+					color = ShadeColor(color, shading);
 					Draw(x, y, color);
 				//}
 
@@ -3625,8 +3724,8 @@ public:
 
 				//if (!drawnPixels[(ScreenHeight() - y - 1) * ScreenWidth() + x]) {
 					//ceiling (symmetrical, at screenHeight - y - 1 instead of y)
-					olc::Pixel color = GetWallTexture(worldMapCeilTxtr)->Sample(floorX2 - cellX + 0.05, floorY2 - cellY + 0.05);
-					color = DarkColor(color, shading);
+					Color color = GetWallTexture(worldMapCeilTxtr)->Sample(floorX2 - cellX + 0.05, floorY2 - cellY + 0.05);
+					color = ShadeColor(color, shading);
 					Draw(x, ScreenHeight() - y - 1, color);
 				//}
 
@@ -3641,21 +3740,21 @@ public:
 			float cameraX = 2 * x / float(ScreenWidth()) - 1; //x-coordinate in camera space,  [0 - 319] pixels -> [-1 - 1]
 
 			//calculate ray position and direction
-			olc::vf2d rayDir = player.direction + player.viewPlane * cameraX;
+			vf2d rayDir = player.direction + player.viewPlane * cameraX;
 
 			//which box of the map we're in
-			olc::vi2d mapPosition = player.position;
+			vi2d mapPosition = player.position;
 
 			//length of ray from current position to next x or y-side
-			olc::vf2d sideDist;
+			vf2d sideDist;
 
 			//length of ray from one x or y-side to next x or y-side
-			olc::vf2d deltaDist = olc::vf2d(std::abs(1 / rayDir.x), std::abs(1 / rayDir.y));
+			vf2d deltaDist = vf2d(std::abs(1 / rayDir.x), std::abs(1 / rayDir.y));
 
 			float perpWallDist;
 
 			//what direction to step in x or y-direction (either +1 or -1)
-			olc::vi2d step;
+			vi2d step;
 
 
 			int hit = 0; //was there a wall hit?
@@ -3731,7 +3830,7 @@ public:
 
 
 			//choose wall texture
-			olc::Pixel color;
+			Color color;
 			int textureNumber = worldMap[mapPosition.y * worldMapWidth + mapPosition.x] - 1;
 
 
@@ -3750,9 +3849,9 @@ public:
 					shading = 1 - shading / 15;
 
 					color = GetWallTexture(textureNumber)->Sample(wallX, wallY);
-					color = DarkColor(color, shading);
+					color = ShadeColor(color, shading);
 
-					if (side == 1) color = DarkColor(color);
+					if (side == 1) color = ShadeColor(color);
 
 					Draw(x, y, color);		
 					drawnPixels[y * ScreenWidth() + x] = true;
@@ -3791,7 +3890,7 @@ public:
 				int thingTexture = thingsArray[spriteOrder[i]].texture;
 				int thingTexturePart = thingsArray[spriteOrder[i]].spritePartIndex;
 
-				olc::Sprite* thingSprite = GetDecorationSprite(thingTexture);
+				Sprite* thingSprite = GetDecorationSprite(thingTexture);
 
 				if (thingsArray[spriteOrder[i]].thingType == 0) { // Decoration
 					thingSprite = GetDecorationSprite(thingTexture);
@@ -3805,7 +3904,7 @@ public:
 
 
 				//translate sprite position to relative to camera
-				olc::vf2d spritePosRel = thingsArray[spriteOrder[i]].position - player.position;
+				vf2d spritePosRel = thingsArray[spriteOrder[i]].position - player.position;
 
 				if (spritePosRel.mag2() < 400) { // Check sprite render distance
 
@@ -3854,7 +3953,7 @@ public:
 								int d = (y - vMoveScreen) * 256 - ScreenHeight() * 128 + spriteHeight * 128; //256 and 128 factors to avoid floats
 								int texY = ((d * 64) / spriteHeight) / 256;
 
-								olc::Pixel color = olc::RED;
+								Color color = RED;
 								color = thingSprite->GetPixel(texX + (thingTexturePart * 64), texY);
 
 								float shading = spritePosRel.mag2();
@@ -3862,10 +3961,10 @@ public:
 								shading = 1 - shading / 80;
 
 
-								if (color != olc::CYAN)
+								if (color != CYAN)
 								{
 									//Draw(stripe, y, color);
-									Draw(stripe, y, DarkColor(color, shading)); //paint pixel if it isn't black, black is the invisible color
+									Draw(stripe, y, ShadeColor(color, shading)); //paint pixel if it isn't black, black is the invisible color
 									drawnPixels[y * ScreenWidth() + stripe] = true;
 								}
 							}
@@ -3896,36 +3995,36 @@ public:
 			player.isMoving = false;
 			player.isShooting = false;
 
-			player.controlMoveVector = olc::vf2d(0, 0);
-			player.controlRotationVector = olc::vf2d(0, 0);
+			player.controlMoveVector = vf2d(0, 0);
+			player.controlRotationVector = vf2d(0, 0);
 
 
 
 			// Main controls ---------------------------------------------------------
 
 			// Move forward
-			if (GetKey(olc::Key::UP).bHeld || GetKey(olc::Key::W).bHeld)
+			if (GetKey(Key::UP).bHeld || GetKey(Key::W).bHeld)
 			{
 				player.isMoving = true;
 				player.controlMoveVector += player.direction;
 			}
 
 			// Move backwards
-			if (GetKey(olc::Key::DOWN).bHeld || GetKey(olc::Key::S).bHeld)
+			if (GetKey(Key::DOWN).bHeld || GetKey(Key::S).bHeld)
 			{
 				player.isMoving = true;
 				player.controlMoveVector -= player.direction;
 			}
 
 			// Strafe right
-			if (GetKey(olc::Key::D).bHeld)
+			if (GetKey(Key::D).bHeld)
 			{
 				player.isMoving = true;
 				player.controlMoveVector += player.viewPlane;
 			}
 
 			// Strafe left
-			if (GetKey(olc::Key::A).bHeld)
+			if (GetKey(Key::A).bHeld)
 			{
 				player.isMoving = true;
 				player.controlMoveVector -= player.viewPlane;
@@ -3934,20 +4033,20 @@ public:
 
 
 			// Rotate to the right
-			if (GetKey(olc::Key::RIGHT).bHeld)
+			if (GetKey(Key::RIGHT).bHeld)
 			{
-				player.controlRotationVector = olc::vf2d(1, 0);
+				player.controlRotationVector = vf2d(1, 0);
 			}
 
 			// Rotate to the left
-			if (GetKey(olc::Key::LEFT).bHeld)
+			if (GetKey(Key::LEFT).bHeld)
 			{
-				player.controlRotationVector = olc::vf2d(-1, 0);
+				player.controlRotationVector = vf2d(-1, 0);
 			}
 
 
 			// Shooting
-			if (GetKey(olc::Key::CTRL).bHeld || GetMouse(0).bHeld)
+			if (GetKey(Key::CTRL).bHeld || GetMouse(0).bHeld)
 			{
 				player.isShooting = true;
 				player.Shoot();
@@ -3956,17 +4055,17 @@ public:
 
 			// Weapons
 
-			if (GetKey(olc::Key::K1).bPressed)
+			if (GetKey(Key::K1).bPressed)
 			{
 				player.ChangeWeapon(0);
 			}
 
-			if (GetKey(olc::Key::K2).bPressed)
+			if (GetKey(Key::K2).bPressed)
 			{
 				player.ChangeWeapon(1);
 			}
 
-			if (GetKey(olc::Key::K3).bPressed)
+			if (GetKey(Key::K3).bPressed)
 			{
 				player.ChangeWeapon(2);
 			}
@@ -3974,7 +4073,7 @@ public:
 
 			// Interaction
 
-			if (GetKey(olc::Key::SPACE).bPressed || GetKey(olc::Key::E).bPressed)
+			if (GetKey(Key::SPACE).bPressed || GetKey(Key::E).bPressed)
 			{
 				player.Interact();
 			}
@@ -3984,7 +4083,7 @@ public:
 
 
 		if (!player.isAlive) {
-			if (GetKey(olc::Key::SPACE).bPressed || GetKey(olc::Key::E).bPressed)
+			if (GetKey(Key::SPACE).bPressed || GetKey(Key::E).bPressed)
 			{
 				RestartLevel();
 			}
@@ -3997,7 +4096,7 @@ public:
 			if (GetWindowMouse().x != 0 && GetWindowMouse().y != 0) { // To prevent cursor set while dragging window
 
 				float deltaMouseX = 0.05 * mouseSensitivity * (GetWindowMouse().x - GetWindowSize().x / 2) / (fElapsedTime / 0.016);
-				player.controlRotationVector += olc::vf2d(deltaMouseX, 0);
+				player.controlRotationVector += vf2d(deltaMouseX, 0);
 				SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2);
 			}
 		}
@@ -4019,19 +4118,19 @@ public:
 	bool isEditorInPlayMode = false;
 
 
-	olc::vi2d gridShift {0,0};
-	olc::vi2d gridOrigin {0,0};
+	vi2d gridShift {0,0};
+	vi2d gridOrigin {0,0};
 
 	int editorCellSize = 20;
 	bool showGrid = true;
 
 
-	olc::vf2d selectedCell{ 0,0 };
+	vf2d selectedCell{ 0,0 };
 	
 	
 	// Controls
 	bool mouseOnUI = false;
-	olc::vi2d mousePosPrev{ GetMouseX(), GetMouseY() };
+	vi2d mousePosPrev{ GetMouseX(), GetMouseY() };
 
 
 	// Tools
@@ -4062,7 +4161,7 @@ public:
 
 
 	void Editor_PlaceDecoration() {
-		Decoration newDecoration = Decoration(this, newId, selectedToolDecor, olc::vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
+		Decoration newDecoration = Decoration(newId, selectedToolDecor, vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
 		decorationsArray.push_back(newDecoration);
 		thingsArray.push_back(newDecoration.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -4070,7 +4169,7 @@ public:
 	}
 
 	void Editor_PlaceItem() {
-		Item newItem = Item(this, newId, selectedToolItem, olc::vf2d(selectedCell.x, selectedCell.y)); newId++;
+		Item newItem = Item(newId, selectedToolItem, vf2d(selectedCell.x, selectedCell.y)); newId++;
 		itemsArray.push_back(newItem);
 		thingsArray.push_back(newItem.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -4078,7 +4177,7 @@ public:
 	}
 
 	void Editor_PlaceEnemy() {
-		Enemy newEnemy = Enemy(this, newId, selectedToolEnemy, olc::vf2d(selectedCell.x, selectedCell.y)); newId++;
+		Enemy newEnemy = Enemy(newId, selectedToolEnemy, vf2d(selectedCell.x, selectedCell.y)); newId++;
 		enemiesArray.push_back(newEnemy);
 		thingsArray.push_back(newEnemy.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -4216,49 +4315,49 @@ public:
 			gridShift.y = (gridShift.y + (GetMouseY() - mousePosPrev.y)) % 20;
 			gridOrigin.y = gridOrigin.y + (GetMouseY() - mousePosPrev.y);
 		}
-		mousePosPrev = olc::vi2d(GetMouseX(), GetMouseY());
+		mousePosPrev = vi2d(GetMouseX(), GetMouseY());
 
 
 		// Arrow control
-		if (GetKey(olc::Key::LEFT).bHeld || GetKey(olc::Key::A).bHeld) {
+		if (GetKey(Key::LEFT).bHeld || GetKey(Key::A).bHeld) {
 			gridShift.x = (gridShift.x + int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.x = gridOrigin.x + int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::RIGHT).bHeld || GetKey(olc::Key::D).bHeld) {
+		if (GetKey(Key::RIGHT).bHeld || GetKey(Key::D).bHeld) {
 			gridShift.x = (gridShift.x - int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.x = gridOrigin.x - int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::UP).bHeld || GetKey(olc::Key::W).bHeld) {
+		if (GetKey(Key::UP).bHeld || GetKey(Key::W).bHeld) {
 			gridShift.y = (gridShift.y + int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.y = gridOrigin.y + int(10 * (fElapsedTime / 0.016));
 		}
-		if (GetKey(olc::Key::DOWN).bHeld || GetKey(olc::Key::S).bHeld) {
+		if (GetKey(Key::DOWN).bHeld || GetKey(Key::S).bHeld) {
 			gridShift.y = (gridShift.y - int(10 * (fElapsedTime / 0.016))) % 20;
 			gridOrigin.y = gridOrigin.y - int(10 * (fElapsedTime / 0.016));
 		}
 
 
 
-		if (GetKey(olc::Key::NP_ADD).bPressed) {
+		if (GetKey(Key::NP_ADD).bPressed) {
 			editorCellSize = 20;
 		}
-		if (GetKey(olc::Key::NP_SUB).bPressed) {
+		if (GetKey(Key::NP_SUB).bPressed) {
 			editorCellSize = 10;
 		}
-		if (GetKey(olc::Key::Z).bPressed) {
+		if (GetKey(Key::Z).bPressed) {
 			editorCellSize = editorCellSize % 20 + 10;
 		}
-		if (GetKey(olc::Key::G).bPressed)
+		if (GetKey(Key::G).bPressed)
 		{
 			showGrid = !showGrid;
 		}
-		if (GetKey(olc::Key::E).bPressed)
+		if (GetKey(Key::E).bPressed)
 		{
 			playerPosSelected = false;
 			levelEndPosSelected = false;
 			eraserSelected = !eraserSelected;
 		}
-		if (GetKey(olc::Key::P).bPressed)
+		if (GetKey(Key::P).bPressed)
 		{
 			eraserSelected = false;
 			levelEndPosSelected = false;
@@ -4317,7 +4416,7 @@ public:
 
 		if (playerPosSelected && !eraserSelected && !levelEndPosSelected && GetMouse(0).bPressed) {
 			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-				player.position = olc::vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5);
+				player.position = vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5);
 			}
 		}
 
@@ -4328,7 +4427,7 @@ public:
 			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
 				for (int intWall = 0; intWall < interactbleWallsArray.size(); intWall++) {
 					if (interactbleWallsArray[intWall].interactionType == InteractibleWall::InteractionType::ENDLEVEL) {
-						interactbleWallsArray[intWall].wallPosition = olc::vf2d(selectedCell.x, selectedCell.y);
+						interactbleWallsArray[intWall].wallPosition = vf2d(selectedCell.x, selectedCell.y);
 					}
 				}
 			}
@@ -4342,12 +4441,12 @@ public:
 
 		mouseOnUI = true; // To prevent placing and moving in background
 
-		FillRect(40, 40, 273, 148, olc::BLACK); // Background
-		FillRect(195, 30, 75, 10, olc::BLACK); // Connection
-		DrawLine(195, 0, 195, 40, olc::YELLOW);
-		DrawLine(270, 0, 270, 40, olc::YELLOW);
-		DrawLine(40, 40, 195, 40, olc::YELLOW);
-		DrawLine(270, 40, 313, 40, olc::YELLOW);
+		FillRect(40, 40, 273, 148, BLACK); // Background
+		FillRect(195, 30, 75, 10, BLACK); // Connection
+		DrawLine(195, 0, 195, 40, YELLOW);
+		DrawLine(270, 0, 270, 40, YELLOW);
+		DrawLine(40, 40, 195, 40, YELLOW);
+		DrawLine(270, 40, 313, 40, YELLOW);
 
 
 		int wallPageCount = ceil(wallSprites.size() / 21);
@@ -4366,25 +4465,25 @@ public:
 
 
 
-				Button selectToolButton = Button(this);
+				Button selectToolButton = Button();
 				int textureIdx = 0;
 				switch (toolSelected)
 				{
 				case 0: // Wall
 					textureIdx = ((toolX + toolY * 7) + 21*toolSelectionPage);
-					selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
+					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
 					break;
 				case 1: // Decorations
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
+					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
 					break;
 				case 2: // Items
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, itemIconSprites[textureIdx]);
+					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, itemIconSprites[textureIdx]);
 					break;
 				case 3: // Enemies
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, olc::vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, enemyIconSprites[textureIdx]);
+					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, enemyIconSprites[textureIdx]);
 					break;
 				default:
 					break;
@@ -4396,7 +4495,7 @@ public:
 		}
 
 
-		Button selectToolNextPageButton = Button(this, olc::vi2d(267, 160), 40, 20, "NEXT");
+		Button selectToolNextPageButton = Button(vi2d(267, 160), 40, 20, "NEXT");
 		selectToolNextPageButton.Update();
 		if (selectToolNextPageButton.isHovered) { mouseOnUI = true; }
 		if (selectToolNextPageButton.isPressed) { 
@@ -4409,7 +4508,7 @@ public:
 		
 		}
 
-		Button selectToolPrevPageButton = Button(this, olc::vi2d(45, 160), 40, 20, "PREV");
+		Button selectToolPrevPageButton = Button(vi2d(45, 160), 40, 20, "PREV");
 		selectToolPrevPageButton.Update();
 		if (selectToolPrevPageButton.isHovered) { mouseOnUI = true; }
 		if (selectToolPrevPageButton.isPressed) { 
@@ -4426,44 +4525,44 @@ public:
 
 
 
-	InputField mapTitleInputField = InputField(this, olc::vi2d(35, 60), 170, 15, "DEFAULT");
-	InputField mapSaveFileNameInputField = InputField(this, olc::vi2d(35, 95), 170, 15, "DEFAULT");
-	InputField mapSizeXInputField = InputField(this, olc::vi2d(225, 60), 50, 15, "20");
-	InputField mapSizeYInputField = InputField(this, olc::vi2d(225, 95), 50, 15, "20");
-	Button mapApplySizeButton = Button(this, olc::vi2d(220, 150), 60, 20, "APPLY");
-	InputField nextMapFileInputField = InputField(this, olc::vi2d(35, 130), 170, 15, "");
+	InputField mapTitleInputField = InputField(vi2d(35, 60), 170, 15, "DEFAULT");
+	InputField mapSaveFileNameInputField = InputField(vi2d(35, 95), 170, 15, "DEFAULT");
+	InputField mapSizeXInputField = InputField(vi2d(225, 60), 50, 15, "20");
+	InputField mapSizeYInputField = InputField(vi2d(225, 95), 50, 15, "20");
+	Button mapApplySizeButton = Button(vi2d(220, 150), 60, 20, "APPLY");
+	InputField nextMapFileInputField = InputField(vi2d(35, 130), 170, 15, "");
 
 	void Editor_ShowSettings() {
 
 		mouseOnUI = true; // To prevent placing and moving in background
 
-		FillRect(20, 40, 273, 142, olc::BLACK); // Background
-		FillRect(48, 30, 30, 10, olc::BLACK); // Connection
-		DrawLine(48, 0, 48, 40, olc::YELLOW);
-		DrawLine(78, 0, 78, 40, olc::YELLOW);
-		DrawLine(20, 40, 48, 40, olc::YELLOW);
-		DrawLine(78, 40, 292, 40, olc::YELLOW);
+		FillRect(20, 40, 273, 142, BLACK); // Background
+		FillRect(48, 30, 30, 10, BLACK); // Connection
+		DrawLine(48, 0, 48, 40, YELLOW);
+		DrawLine(78, 0, 78, 40, YELLOW);
+		DrawLine(20, 40, 48, 40, YELLOW);
+		DrawLine(78, 40, 292, 40, YELLOW);
 
 
 
-		DrawString(olc::vi2d(35, 50), "MAP TITLE");
+		DrawString(vi2d(35, 50), "MAP TITLE");
 		mapTitleInputField.Update();
 		if (mapTitleInputField.isHovered) { mouseOnUI = true; }
 		if (mapTitleInputField.isPressed) { mapTitleInputField.isFocused = true; }
 
-		DrawString(olc::vi2d(35, 85), "SAVE FILE NAME");
+		DrawString(vi2d(35, 85), "SAVE FILE NAME");
 		mapSaveFileNameInputField.Update();
 		if (mapSaveFileNameInputField.isHovered) { mouseOnUI = true; }
 		if (mapSaveFileNameInputField.isPressed) { mapSaveFileNameInputField.isFocused = true; }
 
-		DrawString(olc::vi2d(225, 50), "SIZE X");
+		DrawString(vi2d(225, 50), "SIZE X");
 		mapSizeXInputField.allowOnlyNumbers = true;
 		mapSizeXInputField.charMaximum = 4;
 		mapSizeXInputField.Update();
 		if (mapSizeXInputField.isHovered) { mouseOnUI = true; }
 		if (mapSizeXInputField.isPressed) { mapSizeXInputField.isFocused = true; }
 
-		DrawString(olc::vi2d(225, 85), "SIZE Y");
+		DrawString(vi2d(225, 85), "SIZE Y");
 		mapSizeYInputField.allowOnlyNumbers = true;
 		mapSizeYInputField.charMaximum = 4;
 		mapSizeYInputField.Update();
@@ -4471,14 +4570,14 @@ public:
 		if (mapSizeYInputField.isPressed) { mapSizeYInputField.isFocused = true; }
 
 
-		DrawString(olc::vi2d(35, 120), "NEXT MAP FILE NAME");
+		DrawString(vi2d(35, 120), "NEXT MAP FILE NAME");
 		nextMapFileInputField.Update();
 		if (nextMapFileInputField.isHovered) { mouseOnUI = true; }
 		if (nextMapFileInputField.isPressed) { nextMapFileInputField.isFocused = true; }
 
 
 		mapApplySizeButton.Update();
-		mapApplySizeButton.colorBackground = olc::DARK_GREEN;
+		mapApplySizeButton.colorBackground = DARK_GREEN;
 		if (mapApplySizeButton.isHovered) { mouseOnUI = true; }
 		if (mapApplySizeButton.isPressed) 
 		{
@@ -4507,7 +4606,7 @@ public:
 
 			// Check if player stay on map
 			if (player.position.x >= worldMapWidth || player.position.y >= worldMapHeight) {
-				player.position = olc::vf2d(1.5,  1.5);
+				player.position = vf2d(1.5,  1.5);
 				editor_infoLog = "Player moved to (1, 1)";
 				editor_infoLogTimer = 2;
 			}
@@ -4524,25 +4623,25 @@ public:
 
 
 
-	InputField mapOpenFileInputField = InputField(this, olc::vi2d(35, 60), 170, 15, "");
-	Button mapLoadMapButton = Button(this, olc::vi2d(145, 88), 60, 20, "LOAD");
-	Button mapCloseOpenFileButton = Button(this, olc::vi2d(34, 88), 60, 20, "CLOSE");
+	InputField mapOpenFileInputField = InputField(vi2d(35, 60), 170, 15, "");
+	Button mapLoadMapButton = Button(vi2d(145, 88), 60, 20, "LOAD");
+	Button mapCloseOpenFileButton = Button(vi2d(34, 88), 60, 20, "CLOSE");
 
 	void Editor_ShowOpenFile() {
 
 		mouseOnUI = true; // To prevent placing and moving in background
 
-		FillRect(20, 40, 200, 80, olc::BLACK); // Background
-		DrawLine(20, 40, 219, 40, olc::YELLOW);
+		FillRect(20, 40, 200, 80, BLACK); // Background
+		DrawLine(20, 40, 219, 40, YELLOW);
 
-		DrawString(olc::vi2d(35, 50), "FILE NAME TO OPEN");
+		DrawString(vi2d(35, 50), "FILE NAME TO OPEN");
 		mapOpenFileInputField.Update();
 		if (mapOpenFileInputField.isHovered) { mouseOnUI = true; }
 		if (mapOpenFileInputField.isPressed) { mapOpenFileInputField.isFocused = true; }
 
 
 		mapLoadMapButton.Update();
-		mapLoadMapButton.colorBackground = olc::DARK_GREEN;
+		mapLoadMapButton.colorBackground = DARK_GREEN;
 		if (mapLoadMapButton.isHovered) { mouseOnUI = true; }
 		if (mapLoadMapButton.isPressed)
 		{
@@ -4557,7 +4656,7 @@ public:
 		}
 
 		mapCloseOpenFileButton.Update();
-		mapCloseOpenFileButton.colorBackground = olc::DARK_RED;
+		mapCloseOpenFileButton.colorBackground = DARK_RED;
 		if (mapCloseOpenFileButton.isHovered) { mouseOnUI = true; }
 		if (mapCloseOpenFileButton.isPressed)
 		{
@@ -4567,20 +4666,20 @@ public:
 	}
 
 
-	Button mapExitEditorButton = Button(this, olc::vi2d(145, 88), 60, 20, "YES");
-	Button mapCloseExitDialogButton = Button(this, olc::vi2d(34, 88), 60, 20, "NO");
+	Button mapExitEditorButton = Button(vi2d(145, 88), 60, 20, "YES");
+	Button mapCloseExitDialogButton = Button(vi2d(34, 88), 60, 20, "NO");
 
 	void Editor_ShowExitDialog() {
 
 		mouseOnUI = true; // To prevent placing and moving in background
 
-		FillRect(20, 40, 200, 80, olc::BLACK); // Background
-		DrawLine(20, 40, 219, 40, olc::YELLOW);
+		FillRect(20, 40, 200, 80, BLACK); // Background
+		DrawLine(20, 40, 219, 40, YELLOW);
 
-		DrawString(olc::vi2d(35, 50), "EXIT EDITOR ?");
+		DrawString(vi2d(35, 50), "EXIT EDITOR ?");
 
 		mapExitEditorButton.Update();
-		mapExitEditorButton.colorBackground = olc::DARK_GREEN;
+		mapExitEditorButton.colorBackground = DARK_GREEN;
 		if (mapExitEditorButton.isHovered) { mouseOnUI = true; }
 		if (mapExitEditorButton.isPressed)
 		{
@@ -4589,7 +4688,7 @@ public:
 		}
 
 		mapCloseExitDialogButton.Update();
-		mapCloseExitDialogButton.colorBackground = olc::DARK_RED;
+		mapCloseExitDialogButton.colorBackground = DARK_RED;
 		if (mapCloseExitDialogButton.isHovered) { mouseOnUI = true; }
 		if (mapCloseExitDialogButton.isPressed)
 		{
@@ -4610,7 +4709,7 @@ public:
 
 		// Background -----------------------
 
-		FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::VERY_DARK_GREY);
+		FillRect(0, 0, ScreenWidth(), ScreenHeight(), VERY_DARK_GREY);
 
 
 		// Draw map -----------------------
@@ -4623,7 +4722,7 @@ public:
 				if (worldMap[j * worldMapWidth + i] != 0) {
 					for (int smplX = 0; smplX < sampleSize; smplX++) {
 						for (int smplY = 0; smplY < sampleSize; smplY++) {
-							olc::Pixel color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+							Color color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
 							Draw(gridOrigin.x + 1 + smplX + i * editorCellSize, gridOrigin.y + 1 + smplY + j * editorCellSize, color);
 						}
 					}
@@ -4638,21 +4737,21 @@ public:
 		if (showGrid) {
 			// Vertical lines
 			for (int i = 0; i < int(ScreenWidth() / editorCellSize) + 2; i++) {
-				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), olc::GREY);
+				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), GREY);
 			}
 			// Horisontal lines
 			for (int j = 0; j < int(ScreenHeight() / editorCellSize) + 2; j++) {
-				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, olc::GREY);
+				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, GREY);
 			}
 
 
 			// Draw grid origin
-			DrawLine(gridOrigin.x, 0, gridOrigin.x, ScreenHeight(), olc::YELLOW);
-			DrawLine(0, gridOrigin.y, ScreenWidth(), gridOrigin.y, olc::YELLOW);
+			DrawLine(gridOrigin.x, 0, gridOrigin.x, ScreenHeight(), YELLOW);
+			DrawLine(0, gridOrigin.y, ScreenWidth(), gridOrigin.y, YELLOW);
 
 			// Draw end of map
-			DrawLine(gridOrigin.x + worldMapWidth * editorCellSize, 0, gridOrigin.x + worldMapWidth * editorCellSize, ScreenHeight(), olc::RED);
-			DrawLine(0, gridOrigin.y + worldMapHeight * editorCellSize, ScreenWidth(), gridOrigin.y + worldMapHeight * editorCellSize, olc::RED);
+			DrawLine(gridOrigin.x + worldMapWidth * editorCellSize, 0, gridOrigin.x + worldMapWidth * editorCellSize, ScreenHeight(), RED);
+			DrawLine(0, gridOrigin.y + worldMapHeight * editorCellSize, ScreenWidth(), gridOrigin.y + worldMapHeight * editorCellSize, RED);
 		}
 
 
@@ -4670,8 +4769,8 @@ public:
 
 			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					olc::Pixel color = GetDecorationSprite(decorationsArray[d].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
-					if (color != olc::CYAN) {
+					Color color = GetDecorationSprite(decorationsArray[d].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
+					if (color != CYAN) {
 						int pixelPosX = gridOrigin.x + 1 + smplX + (decorationsArray[d].position.x - 0.5) * editorCellSize;
 						int pixelPosY = gridOrigin.y + 1 + smplY + (decorationsArray[d].position.y - 0.5) * editorCellSize;
 						Draw(pixelPosX, pixelPosY, color);
@@ -4686,8 +4785,8 @@ public:
 
 			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					olc::Pixel color = itemIconSprites[itemsArray[i].texture]->GetPixel(floor((float)itemIconSprites[itemsArray[i].texture]->width / editorCellSize * smplX), floor((float)itemIconSprites[itemsArray[i].texture]->height / editorCellSize * smplY));
-					if (color != olc::CYAN) {
+					Color color = itemIconSprites[itemsArray[i].texture]->GetPixel(floor((float)itemIconSprites[itemsArray[i].texture]->width / editorCellSize * smplX), floor((float)itemIconSprites[itemsArray[i].texture]->height / editorCellSize * smplY));
+					if (color != CYAN) {
 						int pixelPosX = gridOrigin.x + 1 + smplX + (itemsArray[i].position.x - 0.5) * editorCellSize;
 						int pixelPosY = gridOrigin.y + 1 + smplY + (itemsArray[i].position.y - 0.5) * editorCellSize;
 						Draw(pixelPosX, pixelPosY, color);
@@ -4702,8 +4801,8 @@ public:
 
 			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					olc::Pixel color = enemyIconSprites[enemiesArray[d].texture]->GetPixel(int((float)enemyIconSprites[enemiesArray[d].texture]->width / editorCellSize * smplX), int((float)enemyIconSprites[enemiesArray[d].texture]->height / editorCellSize * smplY));
-					if (color != olc::CYAN) {
+					Color color = enemyIconSprites[enemiesArray[d].texture]->GetPixel(int((float)enemyIconSprites[enemiesArray[d].texture]->width / editorCellSize * smplX), int((float)enemyIconSprites[enemiesArray[d].texture]->height / editorCellSize * smplY));
+					if (color != CYAN) {
 						int pixelPosX = gridOrigin.x + 1 + smplX + (enemiesArray[d].position.x - 0.5) * editorCellSize;
 						int pixelPosY = gridOrigin.y + 1 + smplY + (enemiesArray[d].position.y - 0.5) * editorCellSize;
 						Draw(pixelPosX, pixelPosY, color);
@@ -4716,8 +4815,8 @@ public:
 
 		for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 			for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-				olc::Pixel color = spriteEditorToolPlayer.GetPixel(int((float)spriteEditorToolPlayer.width / editorCellSize * smplX), int((float)spriteEditorToolPlayer.height / editorCellSize * smplY));
-				if (color != olc::CYAN) {
+				Color color = spriteEditorToolPlayer.GetPixel(int((float)spriteEditorToolPlayer.width / editorCellSize * smplX), int((float)spriteEditorToolPlayer.height / editorCellSize * smplY));
+				if (color != CYAN) {
 					int pixelPosX = gridOrigin.x + smplX + (player.position.x - 0.5) * editorCellSize;
 					int pixelPosY = gridOrigin.y + smplY + (player.position.y - 0.5) * editorCellSize;
 					Draw(pixelPosX, pixelPosY, color);
@@ -4732,8 +4831,8 @@ public:
 			if (interactbleWallsArray[intWall].interactionType == InteractibleWall::InteractionType::ENDLEVEL) {
 				for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
 					for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-						olc::Pixel color = spriteEditorToolEndLevel.GetPixel(int((float)spriteEditorToolEndLevel.width / editorCellSize * smplX), int((float)spriteEditorToolEndLevel.height / editorCellSize * smplY));
-						if (color != olc::CYAN) {
+						Color color = spriteEditorToolEndLevel.GetPixel(int((float)spriteEditorToolEndLevel.width / editorCellSize * smplX), int((float)spriteEditorToolEndLevel.height / editorCellSize * smplY));
+						if (color != CYAN) {
 							int pixelPosX = gridOrigin.x + smplX + (interactbleWallsArray[intWall].wallPosition.x) * editorCellSize;
 							int pixelPosY = gridOrigin.y + smplY + (interactbleWallsArray[intWall].wallPosition.y) * editorCellSize;
 							Draw(pixelPosX, pixelPosY, color);
@@ -4757,7 +4856,7 @@ public:
 			selectedCell.y = floor(selectedCell.y);
 
 			// Rectangle
-			DrawRect(gridOrigin.x + selectedCell.x * editorCellSize, gridOrigin.y + selectedCell.y * editorCellSize, editorCellSize, editorCellSize, olc::RED);
+			DrawRect(gridOrigin.x + selectedCell.x * editorCellSize, gridOrigin.y + selectedCell.y * editorCellSize, editorCellSize, editorCellSize, RED);
 
 			std::string cellXText = std::to_string(selectedCell.x);
 			std::string cellYText = std::to_string(selectedCell.y);
@@ -4770,7 +4869,7 @@ public:
 			selectedCell.y = (floor(selectedCell.y * 2)) / 2;
 
 			// Dot
-			FillRect(gridOrigin.x + selectedCell.x * editorCellSize - 3, gridOrigin.y + selectedCell.y * editorCellSize - 3, 7, 7, olc::RED);
+			FillRect(gridOrigin.x + selectedCell.x * editorCellSize - 3, gridOrigin.y + selectedCell.y * editorCellSize - 3, 7, 7, RED);
 
 			std::string cellXText = std::to_string(selectedCell.x);
 			std::string cellYText = std::to_string(selectedCell.y);
@@ -4795,14 +4894,14 @@ public:
 
 
 		// Upper menu background
-		FillRect(0, 0, 320, 30, olc::BLACK);
+		FillRect(0, 0, 320, 30, BLACK);
 
 
 
 
 
 		// Save button
-		Button saveButton = Button(this, olc::vi2d(3, 3), 22, 22, &spriteEditorSave);
+		Button saveButton = Button(vi2d(3, 3), 22, 22, &spriteEditorSave);
 		saveButton.showBorder = false;
 		saveButton.hoverText = "SAVE";
 		saveButton.Update();
@@ -4819,7 +4918,7 @@ public:
 		}
 
 		// Load button
-		Button loadButton = Button(this, olc::vi2d(28, 3), 22, 22, &spriteEditorLoad);
+		Button loadButton = Button(vi2d(28, 3), 22, 22, &spriteEditorLoad);
 		loadButton.showBorder = false;
 		loadButton.hoverText = "LOAD";
 		loadButton.Update();
@@ -4831,7 +4930,7 @@ public:
 		}
 
 		// Settings button
-		Button settingsButton = Button(this, olc::vi2d(53, 3), 22, 22, &spriteEditorSettings);
+		Button settingsButton = Button(vi2d(53, 3), 22, 22, &spriteEditorSettings);
 		settingsButton.showBorder = false;
 		settingsButton.hoverText = "SETTINGS";
 		settingsButton.Update();
@@ -4849,7 +4948,7 @@ public:
 		}
 
 		// Play button
-		Button playButton = Button(this, olc::vi2d(279, 0), 30, 30, &spriteEditorPlay);
+		Button playButton = Button(vi2d(279, 0), 30, 30, &spriteEditorPlay);
 		playButton.showBorder = false;
 		playButton.hoverText = "PLAY";
 		playButton.Update();
@@ -4882,7 +4981,7 @@ public:
 
 
 		// Tool Wall button
-		Button toolWallButton = Button(this, olc::vi2d(90, 5), 20, 20, &spriteEditorToolWall);
+		Button toolWallButton = Button(vi2d(90, 5), 20, 20, &spriteEditorToolWall);
 		toolWallButton.showBorder = true;
 		toolWallButton.hoverText = "WALL";
 		toolWallButton.Update();
@@ -4890,7 +4989,7 @@ public:
 		if (toolWallButton.isPressed) { toolSelected = 0; toolSelectionPage = 0; }
 
 		// Tool Decorations button
-		Button toolDecorButton = Button(this, olc::vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
+		Button toolDecorButton = Button(vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
 		toolDecorButton.showBorder = true;
 		toolDecorButton.hoverText = "DECOR";
 		toolDecorButton.Update();
@@ -4898,7 +4997,7 @@ public:
 		if (toolDecorButton.isPressed) { toolSelected = 1; toolSelectionPage = 0; }
 
 		// Tool Items button
-		Button toolItemButton = Button(this, olc::vi2d(140, 5), 20, 20, &spriteEditorToolItem);
+		Button toolItemButton = Button(vi2d(140, 5), 20, 20, &spriteEditorToolItem);
 		toolItemButton.showBorder = true;
 		toolItemButton.hoverText = "ITEM";
 		toolItemButton.Update();
@@ -4906,7 +5005,7 @@ public:
 		if (toolItemButton.isPressed) { toolSelected = 2; toolSelectionPage = 0; }
 
 		// Tool Enemies button
-		Button toolEnemyButton = Button(this, olc::vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
+		Button toolEnemyButton = Button(vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
 		toolEnemyButton.showBorder = true;
 		toolEnemyButton.hoverText = "ENEMY";
 		toolEnemyButton.Update();
@@ -4917,7 +5016,7 @@ public:
 
 
 		// Tool Eraser button
-		Button toolEraserButton = Button(this, olc::vi2d(3, 35), 20, 20, &spriteEditorToolEracer);
+		Button toolEraserButton = Button(vi2d(3, 35), 20, 20, &spriteEditorToolEracer);
 		toolEraserButton.showBorder = true;
 		toolEraserButton.hoverText = "ERASER";
 		toolEraserButton.Update();
@@ -4925,7 +5024,7 @@ public:
 		if (toolEraserButton.isPressed) { playerPosSelected = false; levelEndPosSelected = false;  eraserSelected = !eraserSelected; }
 
 		// Tool Zoom button
-		Button toolZoomButton = Button(this, olc::vi2d(3, 60), 20, 20, &spriteEditorToolZoom);
+		Button toolZoomButton = Button(vi2d(3, 60), 20, 20, &spriteEditorToolZoom);
 		toolZoomButton.showBorder = true;
 		toolZoomButton.hoverText = "ZOOM";
 		toolZoomButton.Update();
@@ -4933,7 +5032,7 @@ public:
 		if (toolZoomButton.isPressed) editorCellSize = editorCellSize % 20 + 10;
 
 		// Tool Grid button
-		Button toolGridButton = Button(this, olc::vi2d(3, 85), 20, 20, &spriteEditorToolGrid);
+		Button toolGridButton = Button(vi2d(3, 85), 20, 20, &spriteEditorToolGrid);
 		toolGridButton.showBorder = true;
 		toolGridButton.hoverText = "GRID";
 		toolGridButton.Update();
@@ -4941,7 +5040,7 @@ public:
 		if (toolGridButton.isPressed) showGrid = !showGrid;
 
 		// Tool Player button
-		Button toolPlayerButton = Button(this, olc::vi2d(3, 125), 20, 20, &spriteEditorToolPlayer);
+		Button toolPlayerButton = Button(vi2d(3, 125), 20, 20, &spriteEditorToolPlayer);
 		toolPlayerButton.showBorder = true;
 		toolPlayerButton.hoverText = "START POSITION";
 		toolPlayerButton.Update();
@@ -4949,7 +5048,7 @@ public:
 		if (toolPlayerButton.isPressed) { eraserSelected = false; levelEndPosSelected = false; playerPosSelected = !playerPosSelected; }
 
 		// Tool EndLevel button
-		Button toolEndLevelButton = Button(this, olc::vi2d(3, 150), 20, 20, &spriteEditorToolEndLevel);
+		Button toolEndLevelButton = Button(vi2d(3, 150), 20, 20, &spriteEditorToolEndLevel);
 		toolEndLevelButton.showBorder = true;
 		toolEndLevelButton.hoverText = "END LEVEL";
 		toolEndLevelButton.Update();
@@ -4958,23 +5057,23 @@ public:
 
 
 		// Tool label
-		DrawString(200, 5, "TOOL:", olc::WHITE);
+		DrawString(200, 5, "TOOL:", WHITE);
 
 		// Tool button
-		Button textureButton = Button(this);
+		Button textureButton = Button();
 		switch (toolSelected)
 		{
 		case 0: // Wall
-			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
+			textureButton = Button(vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
 			break;
 		case 1: // Decorations
-			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
+			textureButton = Button(vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
 			break;
 		case 2: // Items
-			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, itemIconSprites[selectedToolItem]);
+			textureButton = Button(vi2d(239, 2), 25, 25, itemIconSprites[selectedToolItem]);
 			break;
 		case 3: // Enemies
-			textureButton = Button(this, olc::vi2d(239, 2), 25, 25, enemyIconSprites[selectedToolEnemy]);
+			textureButton = Button(vi2d(239, 2), 25, 25, enemyIconSprites[selectedToolEnemy]);
 			break;
 		}
 		textureButton.Update();
@@ -4990,29 +5089,29 @@ public:
 
 		// Selected tool highlighting -------------------------------
 
-		DrawRect(88 + toolSelected * 25, 3, 24, 24, olc::YELLOW);
-		DrawRect(89 + toolSelected * 25, 4, 22, 22, olc::YELLOW);
+		DrawRect(88 + toolSelected * 25, 3, 24, 24, YELLOW);
+		DrawRect(89 + toolSelected * 25, 4, 22, 22, YELLOW);
 
 
 		if (eraserSelected) {
-			DrawRect(2, 34, 22, 22, olc::YELLOW);
-			DrawRect(1, 33, 24, 24, olc::YELLOW);
+			DrawRect(2, 34, 22, 22, YELLOW);
+			DrawRect(1, 33, 24, 24, YELLOW);
 			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEracer, olc::CYAN);
+			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEracer, CYAN);
 		}
 
 		if (playerPosSelected) {
-			DrawRect(2, 124, 22, 22, olc::YELLOW);
-			DrawRect(1, 123, 24, 24, olc::YELLOW);
+			DrawRect(2, 124, 22, 22, YELLOW);
+			DrawRect(1, 123, 24, 24, YELLOW);
 			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolPlayer, olc::CYAN);
+			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolPlayer, CYAN);
 		}
 
 		if (levelEndPosSelected) {
-			DrawRect(2, 149, 22, 22, olc::YELLOW);
-			DrawRect(1, 148, 24, 24, olc::YELLOW);
+			DrawRect(2, 149, 22, 22, YELLOW);
+			DrawRect(1, 148, 24, 24, YELLOW);
 			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEndLevel, olc::CYAN);
+			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEndLevel, CYAN);
 		}
 
 
@@ -5047,8 +5146,8 @@ public:
 		// Hovering text -----------------------
 
 		if (hoverText != "") {
-			DrawString(GetMouseX() - 1, GetMouseY() + 18, hoverText, olc::BLACK);
-			DrawString(GetMouseX() - 2, GetMouseY() + 17, hoverText, olc::WHITE);
+			DrawString(GetMouseX() - 1, GetMouseY() + 18, hoverText, BLACK);
+			DrawString(GetMouseX() - 2, GetMouseY() + 17, hoverText, WHITE);
 		}
 
 
@@ -5059,7 +5158,7 @@ public:
 
 		if (editor_infoLogTimer > 0) {
 			editor_infoLogTimer -= fElapsedTime;
-			DrawString(31, 38, editor_infoLog, olc::BLACK);
+			DrawString(31, 38, editor_infoLog, BLACK);
 			DrawString(30, 37, editor_infoLog);
 		}
 
@@ -5075,7 +5174,7 @@ public:
 
 		// Exit editor -----------------------
 
-		if (GetKey(olc::Key::ESCAPE).bPressed) {
+		if (GetKey(Key::ESCAPE).bPressed) {
 			showExitDialog = true;
 		}
 
@@ -5084,9 +5183,6 @@ public:
 
 
 
-	//===============================================================================================================================
-	// MAIN ENGINE FUNCTIONS
-	//===============================================================================================================================
 
 
 	void RestartLevel() {
@@ -5096,8 +5192,30 @@ public:
 	}
 
 
-	bool OnUserCreate() override
-	{
+
+
+	void PlayMapMIDI() {
+		std::string fullMidiFileName = "sounds/" + midiFileName + ".mid";
+		char* midiCSTR = new char[fullMidiFileName.length() + 1];
+		strcpy(midiCSTR, fullMidiFileName.c_str());
+
+		//std::cout << midiCSTR << std::endl;
+
+		RestartMIDI(midiCSTR);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+	bool GameStart() {
 		// Initialisation ====================================================================
 
 		// Called once at the start, so create things here
@@ -5118,8 +5236,7 @@ public:
 
 		// Create objects ====================================================================
 
-		player.engineReference = this;
-		player.position = olc::vf2d{ 1.5, 1.5 };
+		player.position = vf2d{ 1.5, 1.5 };
 		player.Ressurect();
 
 
@@ -5135,10 +5252,7 @@ public:
 		return true;
 	}
 
-
-
-	bool OnUserUpdate(float fElapsedTime) override
-	{
+	bool GameUpdate(float fElapsedTime) {
 
 		// Game states ==============================================================================
 
@@ -5168,13 +5282,13 @@ public:
 
 			UserControls(fElapsedTime);
 
-			
+
 
 			if (isEditorInPlayMode) {
-				DrawString(80, 180,"EDITOR IN PLAY MODE",olc::WHITE);
-				DrawString(80, 190, "PRESS M TO RETURN", olc::WHITE);
+				DrawString(80, 180, "EDITOR IN PLAY MODE", WHITE);
+				DrawString(80, 190, "PRESS M TO RETURN", WHITE);
 
-				if (GetKey(olc::Key::M).bPressed) {
+				if (GetKey(Key::M).bPressed) {
 					isEditorInPlayMode = false;
 
 					// Load map
@@ -5196,7 +5310,7 @@ public:
 			}
 
 
-			if (GetKey(olc::Key::ESCAPE).bPressed)
+			if (GetKey(Key::ESCAPE).bPressed)
 			{
 				!isMenuOpen ? gameState = STATE_MENU : gameState = STATE_GAMEPLAY;
 				submenu = 0;
@@ -5219,7 +5333,7 @@ public:
 
 
 		case STATE_MENU:
-			
+
 			isMenuOpen = true;
 			showCursor = true;
 
@@ -5231,7 +5345,7 @@ public:
 			UserControls(fElapsedTime);
 
 
-			if (GetKey(olc::Key::ESCAPE).bPressed)
+			if (GetKey(Key::ESCAPE).bPressed)
 			{
 				!isMenuOpen ? gameState = STATE_MENU : gameState = STATE_GAMEPLAY;
 				submenu = 0;
@@ -5266,7 +5380,7 @@ public:
 
 			DrawEndScreen();
 
-			if (GetKey(olc::Key::ESCAPE).bPressed)
+			if (GetKey(Key::ESCAPE).bPressed)
 			{
 				!isMenuOpen ? gameState = STATE_MENU : gameState = STATE_ENDGAME;
 				submenu = 0;
@@ -5280,7 +5394,7 @@ public:
 
 			DrawLoreScreen();
 
-			if (GetKey(olc::Key::SPACE).bPressed || GetKey(olc::Key::E).bPressed)
+			if (GetKey(Key::SPACE).bPressed || GetKey(Key::E).bPressed)
 			{
 				gameState = STATE_GAMEPLAY;
 				SetCursorPos(GetWindowPosition().x + GetWindowSize().x / 2, GetWindowPosition().y + GetWindowSize().y / 2); // Return cursor to center
@@ -5291,9 +5405,9 @@ public:
 
 		}
 
-		
 
-		
+
+
 
 
 		// UI ==============================================================================
@@ -5301,14 +5415,14 @@ public:
 
 		// Draw mouse cursor
 		if (showCursor) {
-			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, olc::CYAN);
+			DrawSpriteColorTransparent(GetMouseX(), GetMouseY(), &spriteCursor, CYAN);
 		}
 
 
 
 		// Debug info ==============================================================================
 
-		
+
 		//std::string aimDist;
 
 		//std::string text = "VEL : " + std::to_string(player.playerVelocity.x) + ", " + std::to_string(player.playerVelocity.y);
@@ -5316,7 +5430,7 @@ public:
 
 		//std::string text = "VERCAM : " + std::to_string(player.cameraVertical);
 		//DrawString(10, 10, text, olc::WHITE);
-		
+
 		//text = "POS : " + std::to_string(player.position.x) + ", " + std::to_string(player.position.y);
 		//DrawString(10, 20, text, olc::WHITE);
 		//
@@ -5325,18 +5439,18 @@ public:
 		//
 		//text = "DIR : " + std::to_string(player.direction.x) + ", " + std::to_string(player.direction.y);
 		//DrawString(10, 50, text, olc::WHITE);
-		
-		
+
+
 		//DrawString(10, 60, aimDist, olc::WHITE);
-		
-		
+
+
 		//text = "SPRITES";
 		//DrawString(250, 10, text, olc::WHITE);
 		//for (int i = 0; i < thingsArray.size(); i++) {
 		//	text = std::to_string(thingsArray[spriteOrder[thingsArray.size() - 1 - i]].texture);
 		//	DrawString(300, 20+10*i, text, olc::WHITE);
 		//}
-		
+
 
 
 
@@ -5361,26 +5475,14 @@ public:
 
 
 
-	void PlayMapMIDI() {
-		std::string fullMidiFileName = "sounds/" + midiFileName + ".mid";
-		char* midiCSTR = new char[fullMidiFileName.length() + 1];
-		strcpy(midiCSTR, fullMidiFileName.c_str());
-
-		//std::cout << midiCSTR << std::endl;
-
-		RestartMIDI(midiCSTR);
-	}
 
 
-
-};
 
 
 
 //===============================================================================================================================
 // MAIN() 
 //===============================================================================================================================
-
 
 
 
@@ -5394,10 +5496,10 @@ int main()
 	
 	ShowCursor(false);
 
-	RaycastEngine engine;
 
-	if (engine.Construct(320, 200, 4, 4, false, true))
-		engine.Start();
+
+	if (pixelGameEngine.Construct(320, 200, 2, 2, false, true))
+		pixelGameEngine.Start();
 
 
 	// After we are finished, we have to delete the irrKlang Device created earlier

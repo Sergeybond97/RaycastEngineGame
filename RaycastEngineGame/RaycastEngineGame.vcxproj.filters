@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="olcPixelGameEngine.cpp" />
+    <ClCompile Include="RaycastEngineGame.cpp" />
+    <ClCompile Include="r_sprite.cpp" />
+    <ClCompile Include="t_imageLoader.cpp" />
+    <ClCompile Include="minisdl_audio.c">
+      <Filter>tinySoundFont</Filter>
+    </ClCompile>
+    <ClCompile Include="c_thing.cpp" />
+    <ClCompile Include="c_enemy.cpp" />
+    <ClCompile Include="c_item.cpp" />
+    <ClCompile Include="c_decoration.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="olcPixelGameEngine.h" />
+    <ClInclude Include="r_color.h" />
+    <ClInclude Include="r_sprite.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="t_imageLoader.h" />
+    <ClInclude Include="ik_ESoundEngineOptions.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ESoundOutputDrivers.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_EStreamModes.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IAudioRecorder.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IAudioStream.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IAudioStreamLoader.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IFileFactory.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IFileReader.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IRefCounted.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_irrKlangTypes.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISound.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundDeviceList.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundEffectControl.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundEngine.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundMixedOutputReceiver.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundSource.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_ISoundStopEventReceiver.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_IVirtualRefCounted.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_SAudioStreamFormat.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="ik_vec3d.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="irrKlang.h">
+      <Filter>irrKlang</Filter>
+    </ClInclude>
+    <ClInclude Include="tml.h">
+      <Filter>tinySoundFont</Filter>
+    </ClInclude>
+    <ClInclude Include="tsf.h">
+      <Filter>tinySoundFont</Filter>
+    </ClInclude>
+    <ClInclude Include="minisdl_audio.h">
+      <Filter>tinySoundFont</Filter>
+    </ClInclude>
+    <ClInclude Include="c_vector.h" />
+    <ClInclude Include="i_controls.h" />
+    <ClInclude Include="c_thing.h" />
+    <ClInclude Include="c_engine.h" />
+    <ClInclude Include="c_enemy.h" />
+    <ClInclude Include="c_item.h" />
+    <ClInclude Include="c_decoration.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="irrKlang">
+      <UniqueIdentifier>{9eb45548-cb9f-4a33-b255-aa3d9a88c682}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tinySoundFont">
+      <UniqueIdentifier>{1e04cf65-2554-42e8-8ba2-b9acc74cdc0a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
