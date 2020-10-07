@@ -1,8 +1,8 @@
 #pragma once
-#include <iostream>
+#include "e_core.h"
 
-#include "c_vector.h"
-#include "c_engine.h"
+
+class RaycastEngine;
 
 
 class Thing
@@ -31,8 +31,8 @@ public:
 
 	Thing();
 	Thing(uint32_t globId, int type, int tex, vf2d pos);
-	bool operator == (const Thing& rhs) const;
-	bool operator != (Thing& rhs) const;
+	bool operator == (const Thing& rhs) const { return (this->id == rhs.id && this->position == rhs.position && this->texture == rhs.texture); }
+	bool operator != (Thing& rhs) const { return (this->id != rhs.id || this->position != rhs.position || this->texture != rhs.texture); }
 
 
 	bool CheckRayCollision(vf2d start, vf2d direction, float length);

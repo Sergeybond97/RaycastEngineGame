@@ -1,12 +1,12 @@
 #pragma once
-#include <iostream>
+#include "e_core.h"
 #include "c_thing.h"
-
 
 
 class Enemy : public Thing {
 
 public:
+
 	Enemy();
 	Enemy(uint32_t globId, int tex, vf2d pos);
 

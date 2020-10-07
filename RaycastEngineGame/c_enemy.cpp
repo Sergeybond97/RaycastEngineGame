@@ -1,9 +1,11 @@
-#include "c_enemy.h"
 
+#include "c_enemy.h"
+#include "c_engine.h"
 
 
 
 Enemy::Enemy() : Thing() {
+
 	//std::cout << "Created Enemy | ID : " << id << std::endl;
 };
 Enemy::Enemy(uint32_t globId, int tex, vf2d pos) : Thing(globId, 1, tex, pos) {
@@ -13,25 +15,25 @@ Enemy::Enemy(uint32_t globId, int tex, vf2d pos) : Thing(globId, 1, tex, pos) {
 		health = 70;
 		damage = 5;
 		moveSpeed = 5;
-		collisionSize = 0.8;
+		collisionSize = 0.8f;
 	}
 	else if (tex == 1) {
 		health = 200;
 		damage = 10;
 		moveSpeed = 3;
-		collisionSize = 0.8;
+		collisionSize = 0.8f;
 	}
 	else if (tex == 2) {
 		health = 35;
 		damage = 2;
 		moveSpeed = 12;
-		collisionSize = 0.8;
+		collisionSize = 0.8f;
 	}
 	else if (tex == 3) {
 		health = 50;
 		damage = 0;
 		moveSpeed = 0;
-		collisionSize = 1.0;
+		collisionSize = 1.0f;
 	}
 
 }
@@ -66,13 +68,13 @@ void Enemy::Update(float fElapsedTime) {
 	if (spriteTimer <= 0 && enemyState == 0) {
 		enemyState = 1;
 		spritePartIndex = enemyState; // Change sprite part to render
-		spriteTimer = 0.5;
+		spriteTimer = 0.5f;
 	}
 
 	if (spriteTimer <= 0 && enemyState == 1) {
 		enemyState = 0;
 		spritePartIndex = enemyState; // Change sprite part to render
-		spriteTimer = 0.5;
+		spriteTimer = 0.5f;
 	}
 
 	// Shooting state
@@ -80,7 +82,7 @@ void Enemy::Update(float fElapsedTime) {
 	if (spriteTimer <= 0 && enemyState == 2) {
 		enemyState = 0;
 		spritePartIndex = enemyState; // Change sprite part to render
-		spriteTimer = 0.2;
+		spriteTimer = 0.2f;
 	}
 
 
@@ -89,7 +91,7 @@ void Enemy::Update(float fElapsedTime) {
 	if (spriteTimer <= 0 && enemyState == 3) {
 		enemyState = 4;
 		spritePartIndex = enemyState; // Change sprite part to render
-		spriteTimer = 0.3;
+		spriteTimer = 0.3f;
 	}
 
 	if (spriteTimer <= 0 && enemyState == 4) {
@@ -141,12 +143,12 @@ void Enemy::Update(float fElapsedTime) {
 				// Shoot
 				if (randAction > 500) {
 					playerInSight = ShootRay(playerRelativePos.norm());
-					AItimer = 1.0;
+					AItimer = 1.0f;
 				}
 				if (randAction > 800) {
 					enemyAIstate = 2;
 					randMoveVector = vf2d(1.0 - rand() % 2000 / 1000.0, 1.0 - rand() % 2000 / 1000.0);
-					AItimer = 1.0;
+					AItimer = 1.0f;
 				}
 
 
@@ -154,7 +156,7 @@ void Enemy::Update(float fElapsedTime) {
 					//std::cout << "Shoot" << std::endl;
 					enemyState = 2;
 					spritePartIndex = enemyState; // Change sprite part to render
-					spriteTimer = 0.2;
+					spriteTimer = 0.2f;
 					if (texture != 3) { // Boss dont make damege
 						engine->player.TakeDamage(damage + (rand() % 4 - 2));
 					}
@@ -218,7 +220,7 @@ void Enemy::TakeDamage(int amount) {
 	health -= amount;
 	//std::cout << "Damage, health remains : " << health << std::endl;
 
-	spriteTimer = 0.1;
+	spriteTimer = 0.1f;
 	if (rand() % 2 == 1) {
 		spritePartIndex = 6;
 	}
@@ -233,7 +235,7 @@ void Enemy::TakeDamage(int amount) {
 		enableCollision = false;
 
 		enemyState = 3;
-		spriteTimer = 0.3;
+		spriteTimer = 0.3f;
 		spritePartIndex = enemyState;
 
 		//isNewGameStarted

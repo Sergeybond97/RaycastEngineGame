@@ -1,6 +1,21 @@
 #include "t_imageLoader.h"
 
 
+
+//#define NOMINMAX
+//#define VC_EXTRALEAN
+//#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <gdiplus.h>
+#include <Shlwapi.h>
+#pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "Shlwapi.lib")
+
+
+
+
+
 static class GDIPlusStartup
 {
 public:
@@ -28,10 +43,10 @@ ImageLoader::ImageLoader() {}
 
 ImageLoader::~ImageLoader() {}
 
-olc::rcode ImageLoader::LoadImageResource(Sprite* spr, const std::string& sImageFile)
+rcode ImageLoader::LoadImageResource(Sprite* spr, const std::string& sImageFile)
 {
 	// Check file exists
-	if (!_gfs::exists(sImageFile)) return olc::rcode::NO_FILE;
+	if (!_gfs::exists(sImageFile)) return NO_FILE;
 
 	// It does, so clear out existing sprite
 	if (spr->pColData != nullptr) delete[] spr->pColData;
@@ -43,7 +58,7 @@ olc::rcode ImageLoader::LoadImageResource(Sprite* spr, const std::string& sImage
 	bmp = Gdiplus::Bitmap::FromFile(ConvertS2W(sImageFile).c_str());
 
 
-	if (bmp->GetLastStatus() != Gdiplus::Ok) return olc::rcode::FAIL;
+	if (bmp->GetLastStatus() != Gdiplus::Ok) return FAIL;
 	spr->width = bmp->GetWidth();
 	spr->height = bmp->GetHeight();
 	spr->pColData = new Color[spr->width * spr->height];
@@ -56,7 +71,7 @@ olc::rcode ImageLoader::LoadImageResource(Sprite* spr, const std::string& sImage
 			spr->SetPixel(x, y, Color(c.GetRed(), c.GetGreen(), c.GetBlue(), c.GetAlpha()));
 		}
 	delete bmp;
-	return olc::rcode::OK;
+	return rcode::OK;
 }
 
 

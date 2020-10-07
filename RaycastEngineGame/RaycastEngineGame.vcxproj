@@ -164,21 +164,30 @@
   <ItemGroup>
     <ClCompile Include="c_decoration.cpp" />
     <ClCompile Include="c_enemy.cpp" />
+    <ClCompile Include="c_engine.cpp" />
+    <ClCompile Include="c_interactibleWall.cpp" />
     <ClCompile Include="c_item.cpp" />
+    <ClCompile Include="c_player.cpp" />
     <ClCompile Include="c_thing.cpp" />
     <ClCompile Include="minisdl_audio.c" />
     <ClCompile Include="olcPixelGameEngine.cpp" />
     <ClCompile Include="RaycastEngineGame.cpp" />
     <ClCompile Include="r_sprite.cpp" />
     <ClCompile Include="t_imageLoader.cpp" />
+    <ClCompile Include="ui_button.cpp" />
+    <ClCompile Include="ui_inputField.cpp" />
+    <ClCompile Include="ui_slider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="c_decoration.h" />
     <ClInclude Include="c_enemy.h" />
     <ClInclude Include="c_engine.h" />
+    <ClInclude Include="c_interactibleWall.h" />
     <ClInclude Include="c_item.h" />
+    <ClInclude Include="c_player.h" />
     <ClInclude Include="c_thing.h" />
-    <ClInclude Include="c_vector.h" />
+    <ClInclude Include="e_vector.h" />
+    <ClInclude Include="e_core.h" />
     <ClInclude Include="ik_ESoundEngineOptions.h" />
     <ClInclude Include="ik_ESoundOutputDrivers.h" />
     <ClInclude Include="ik_EStreamModes.h" />
@@ -209,6 +218,9 @@
     <ClInclude Include="tml.h" />
     <ClInclude Include="tsf.h" />
     <ClInclude Include="t_imageLoader.h" />
+    <ClInclude Include="ui_button.h" />
+    <ClInclude Include="ui_inputField.h" />
+    <ClInclude Include="ui_slider.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

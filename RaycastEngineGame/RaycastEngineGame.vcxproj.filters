@@ -12,6 +12,12 @@
     <ClCompile Include="c_enemy.cpp" />
     <ClCompile Include="c_item.cpp" />
     <ClCompile Include="c_decoration.cpp" />
+    <ClCompile Include="c_player.cpp" />
+    <ClCompile Include="c_interactibleWall.cpp" />
+    <ClCompile Include="ui_button.cpp" />
+    <ClCompile Include="ui_inputField.cpp" />
+    <ClCompile Include="ui_slider.cpp" />
+    <ClCompile Include="c_engine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="olcPixelGameEngine.h" />
@@ -91,13 +97,19 @@
     <ClInclude Include="minisdl_audio.h">
       <Filter>tinySoundFont</Filter>
     </ClInclude>
-    <ClInclude Include="c_vector.h" />
     <ClInclude Include="i_controls.h" />
     <ClInclude Include="c_thing.h" />
     <ClInclude Include="c_engine.h" />
     <ClInclude Include="c_enemy.h" />
     <ClInclude Include="c_item.h" />
     <ClInclude Include="c_decoration.h" />
+    <ClInclude Include="c_player.h" />
+    <ClInclude Include="c_interactibleWall.h" />
+    <ClInclude Include="ui_button.h" />
+    <ClInclude Include="ui_inputField.h" />
+    <ClInclude Include="ui_slider.h" />
+    <ClInclude Include="e_core.h" />
+    <ClInclude Include="e_vector.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="irrKlang">
