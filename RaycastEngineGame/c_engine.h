@@ -64,7 +64,6 @@ class RaycastEngine {
 
 private:
 
-	static RaycastEngine* p_instance;
 
 	RaycastEngine() 
 	{
@@ -75,9 +74,10 @@ private:
 	
 public:
 	static RaycastEngine* getInstance() {
-		if (!p_instance)
-			p_instance = new RaycastEngine();
-		return p_instance;
+		static RaycastEngine p_instance;
+		//if (p_instance == nullptr)
+		//	p_instance = new RaycastEngine();
+		return &p_instance;
 	}
 
 

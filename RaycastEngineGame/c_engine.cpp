@@ -10,7 +10,7 @@
 
 
 
-RaycastEngine* RaycastEngine::p_instance = NULL;
+//RaycastEngine* RaycastEngine::p_instance = NULL;
 
 
 // Callback function called by the audio thread

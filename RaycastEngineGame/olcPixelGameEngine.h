@@ -311,7 +311,7 @@ int main()
 	#if defined(OLC_IMAGE_STB)
 		#define PGE_ILOADER_STB
 	#else
-		//#define	PGE_ILOADER_GDI
+		#define	PGE_ILOADER_GDI
 	#endif
 #endif
 

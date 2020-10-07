@@ -23,20 +23,22 @@ public:
 	RECore core = RECore(this);
 
 	PGE() {
+		std::cout << "PixelGameEngine Constructor" << std::endl;
+
 		sAppName = "RaycastEngine";
 
 		gameEngine = RaycastEngine::getInstance();
-		gameEngine->engineCore = core;
+		//gameEngine->engineCore = core;
 	}
 
 	bool OnUserCreate() override {
-		gameEngine->GameStart();
+		//gameEngine->GameStart();
 
 		return true;
 	}
 
 	bool OnUserUpdate(float fElapsedTime) override {
-		gameEngine->GameUpdate(fElapsedTime);
+		//gameEngine->GameUpdate(fElapsedTime);
 
 		return true;
 	}
@@ -64,6 +66,7 @@ int main()
 	ShowCursor(false);
 
 
+	std::cout << "Starting PGE" << std::endl;
 
 	if (pixelGameEngine.Construct(320, 200, 2, 2, false, true))
 		pixelGameEngine.Start();
