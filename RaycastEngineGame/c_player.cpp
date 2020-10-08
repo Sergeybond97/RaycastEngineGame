@@ -2,8 +2,8 @@
 #include "c_engine.h"
 
 
-Player::Player() {
-	engine = RaycastEngine::getInstance();
+Player::Player(RaycastEngine* eng) {
+	engine = eng;
 }
 
 

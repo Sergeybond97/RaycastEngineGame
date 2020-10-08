@@ -52,7 +52,7 @@ public:
 	int weaponToChange = 0;
 
 
-	Player();
+	Player(RaycastEngine* eng);
 
 	void Update(float fElapsedTime);
 

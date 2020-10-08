@@ -2,8 +2,8 @@
 #include "c_engine.h"
 
 
-Button::Button() {
-	engine = RaycastEngine::getInstance();
+Button::Button(RaycastEngine* eng) {
+	engine = eng;
 	position = vi2d(0, 0);
 	width = 20;
 	height = 40;
@@ -22,8 +22,8 @@ Button::Button() {
 	sprite = nullptr;
 }
 
-Button::Button(vi2d pos, uint32_t w, uint32_t h, std::string txt) {
-	engine = RaycastEngine::getInstance();
+Button::Button(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt) {
+	engine = eng;
 	position = pos;
 	width = w;
 	height = h;
@@ -42,8 +42,8 @@ Button::Button(vi2d pos, uint32_t w, uint32_t h, std::string txt) {
 	sprite = nullptr;
 }
 
-Button::Button(vi2d pos, uint32_t w, uint32_t h, Sprite* img) {
-	engine = RaycastEngine::getInstance();
+Button::Button(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, Sprite* img) {
+	engine = eng;
 	position = pos;
 	width = w;
 	height = h;

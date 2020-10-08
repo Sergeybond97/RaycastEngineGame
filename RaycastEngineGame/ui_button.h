@@ -37,11 +37,11 @@ public:
 
 
 
-	Button();
+	Button(RaycastEngine* eng);
 
-	Button(vi2d pos, uint32_t w, uint32_t h, std::string txt);
+	Button(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt);
 
-	Button(vi2d pos, uint32_t w, uint32_t h, Sprite* img);
+	Button(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, Sprite* img);
 
 
 

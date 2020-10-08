@@ -8,23 +8,28 @@
 #include "i_controls.h"
 
 
+
+
 enum rcode { FAIL = 0, OK = 1, NO_FILE = -1 };
 
 
 class RECore {
 
-private:
+public:
 	olc::PixelGameEngine* pixelGameEngine;
 
 
-public:
 
-	RECore() {
 
-	}
+	//RECore() {
+	//	std::cout << "RECore Default constructor" << std::endl;
+	//	pixelGameEngine = nullptr;
+	//}
 
 	RECore(olc::PixelGameEngine* pge) {
+		std::cout << "RECore: Constructor" << std::endl;
 		pixelGameEngine = pge;
+		std::cout << "RECore: AppName = " << pixelGameEngine->sAppName << std::endl;
 	}
 
 	olc::Pixel ColorToOLCPixel(Color c) {

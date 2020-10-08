@@ -4,11 +4,11 @@
 
 
 
-Enemy::Enemy() : Thing() {
+Enemy::Enemy(RaycastEngine* eng) : Thing(eng) {
 
 	//std::cout << "Created Enemy | ID : " << id << std::endl;
 };
-Enemy::Enemy(uint32_t globId, int tex, vf2d pos) : Thing(globId, 1, tex, pos) {
+Enemy::Enemy(RaycastEngine* eng, uint32_t globId, int tex, vf2d pos) : Thing(eng, globId, 1, tex, pos) {
 	//std::cout << "Created Enemy, param | ID : " << id << std::endl;
 
 	if (tex == 0) {
@@ -40,7 +40,7 @@ Enemy::Enemy(uint32_t globId, int tex, vf2d pos) : Thing(globId, 1, tex, pos) {
 
 
 Thing Enemy::ToThing() {
-	Thing thing = Thing(id, thingType, texture, position);
+	Thing thing = Thing(engine, id, thingType, texture, position);
 	thing.spritePartIndex = spritePartIndex;
 	thing.enableCollision = enableCollision;
 	thing.enableRender = enableRender;

@@ -19,8 +19,8 @@ public:
 	std::vector<int> wallsToOpen;
 
 
-	InteractibleWall();
-	InteractibleWall(vi2d wallPos, InteractionType type);
+	InteractibleWall(RaycastEngine* eng);
+	InteractibleWall(RaycastEngine* eng, vi2d wallPos, InteractionType type);
 
 
 

@@ -57,27 +57,39 @@ static tml_message* g_MidiMessage;  //next message to be played
 
 
 
+struct Weapon {
+	float damage;
+	float fireRate;
+
+	bool onPlayer;
+
+	int currentAmmo;
+	int maxAmmo;
+};
+
+
 
 
 class RaycastEngine {
 
 
-private:
+public:
 
+	//static RaycastEngine* p_instance;
 
-	RaycastEngine() 
+	RaycastEngine(RECore* core) 
 	{
-		std::cout << "RaycastEngine Constructor";
+		std::cout << "RaycastEngine Constructor" << std::endl;
+		engineCore = core;
 	};
     RaycastEngine(const RaycastEngine&);
     //RaycastEngine& operator=(RaycastEngine&);
 	
-public:
 	static RaycastEngine* getInstance() {
-		static RaycastEngine p_instance;
-		//if (p_instance == nullptr)
-		//	p_instance = new RaycastEngine();
-		return &p_instance;
+	//	//static RaycastEngine p_instance;
+	//	//if (p_instance == nullptr)
+	//	//	p_instance = new RaycastEngine();
+		return nullptr;
 	}
 
 
@@ -85,7 +97,7 @@ public:
 
 	// Engine Core =============================================================
 
-	RECore engineCore;
+	RECore* engineCore;
 
 
 	// Core wrapper =============================================================
@@ -94,47 +106,47 @@ public:
 
 	// Draws a single Pixel
 	bool Draw(int32_t x, int32_t y, Color c = WHITE) {
-		return engineCore.Draw(x,y,c);
+		return engineCore->Draw(x,y,c);
 	}
 
 	bool Draw(const vi2d& pos, Color c = WHITE) {
-		return engineCore.Draw(pos, c);
+		return engineCore->Draw(pos, c);
 	}
 
 	// Draws a line from (x1,y1) to (x2,y2)
 	void DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, Color c = WHITE) {
-		return engineCore.DrawLine(x1, y1, x2, y2, c);
+		return engineCore->DrawLine(x1, y1, x2, y2, c);
 	}
 
 	void DrawLine(const vi2d& pos1, const vi2d& pos2, Color c = WHITE) {
-		return engineCore.DrawLine(pos1, pos2, c);
+		return engineCore->DrawLine(pos1, pos2, c);
 	}
 
 	// Draws a rectangle at (x,y) to (x+w,y+h)
 	void DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, Color c = WHITE) {
-		return engineCore.DrawRect(x, y, w, h, c);
+		return engineCore->DrawRect(x, y, w, h, c);
 	}
 
 	void DrawRect(const vi2d& pos, const vi2d& size, Color c = WHITE) {
-		return engineCore.DrawRect(pos, size, c);
+		return engineCore->DrawRect(pos, size, c);
 	}
 
 	// Fills a rectangle at (x,y) to (x+w,y+h)
 	void FillRect(int32_t x, int32_t y, int32_t w, int32_t h, Color c = WHITE) {
-		return engineCore.FillRect(x, y, w, h, c);
+		return engineCore->FillRect(x, y, w, h, c);
 	}
 
 	void FillRect(const vi2d& pos, const vi2d& size, Color c = WHITE) {
-		return engineCore.FillRect(pos, size, c);
+		return engineCore->FillRect(pos, size, c);
 	}
 
 	// Draws a single line of text
 	void DrawString(int32_t x, int32_t y, const std::string& sText, Color col = WHITE, uint32_t scale = 1) {
-		return engineCore.DrawString(x, y, sText, col, scale);
+		return engineCore->DrawString(x, y, sText, col, scale);
 	}
 
 	void DrawString(const vi2d& pos, const std::string& sText, Color col = WHITE, uint32_t scale = 1) {
-		return engineCore.DrawString(pos, sText, col, scale);
+		return engineCore->DrawString(pos, sText, col, scale);
 	}
 
 
@@ -142,48 +154,48 @@ public:
 	// - Controls
 
 	HWButton GetKey(Key k) {
-		return engineCore.GetKey(k);
+		return engineCore->GetKey(k);
 	}
 
 	HWButton GetMouse(uint32_t b) {
-		return engineCore.GetMouse(b);
+		return engineCore->GetMouse(b);
 	}
 
 	int32_t GetMouseX()
 	{
-		return engineCore.GetMouseX();
+		return engineCore->GetMouseX();
 	}
 
 	int32_t GetMouseY()
 	{
-		return engineCore.GetMouseY();
+		return engineCore->GetMouseY();
 	}
 
 
 	// - Window
 
 	int32_t ScreenWidth() {
-		return engineCore.ScreenWidth();
+		return engineCore->ScreenWidth();
 	}
 
 	int32_t ScreenHeight() {
-		return engineCore.ScreenHeight();
+		return engineCore->ScreenHeight();
 	}
 
 	bool IsFocused() {
-		return engineCore.IsFocused();
+		return engineCore->IsFocused();
 	}
 
 	vi2d GetWindowMouse() {
-		return engineCore.GetWindowMouse();
+		return engineCore->GetWindowMouse();
 	}
 
 	vi2d GetWindowSize() {
-		return engineCore.GetWindowSize();
+		return engineCore->GetWindowSize();
 	}
 
 	vi2d GetWindowPosition() {
-		return engineCore.GetWindowPosition();
+		return engineCore->GetWindowPosition();
 	}
 
 
@@ -381,11 +393,10 @@ public:
 
 		player.position = vf2d(1.5, 1.5);
 
-		InteractibleWall endLevel = InteractibleWall(vf2d(3, 3), InteractibleWall::InteractionType::ENDLEVEL);
+		InteractibleWall endLevel = InteractibleWall(this, vf2d(3, 3), InteractibleWall::InteractionType::ENDLEVEL);
 		interactbleWallsArray.push_back(endLevel);
 
 	}
-
 
 	void LoadMap(std::string mapName) {
 
@@ -661,7 +672,7 @@ public:
 						}
 
 						if (readPosition != vf2d(-1, -1)) {
-							InteractibleWall newWall = InteractibleWall(readPosition, InteractibleWall::InteractionType::ENDLEVEL);
+							InteractibleWall newWall = InteractibleWall(this, readPosition, InteractibleWall::InteractionType::ENDLEVEL);
 							interactbleWallsArray.push_back(newWall);
 						}
 						else {
@@ -738,7 +749,7 @@ public:
 						}
 
 						if (readType != -1 && readPosition != vf2d(-1, -1)) {
-							Enemy newEnemy = Enemy(newId, readType, readPosition);
+							Enemy newEnemy = Enemy(this, newId, readType, readPosition);
 							enemiesArray.push_back(newEnemy); newId++;
 						}
 						else {
@@ -817,7 +828,7 @@ public:
 
 
 						if (readType != -1 && readPosition != vf2d(-1, -1)) {
-							Decoration newDecoration = Decoration(newId, readType, readPosition);
+							Decoration newDecoration = Decoration(this, newId, readType, readPosition);
 							decorationsArray.push_back(newDecoration); newId++;
 						}
 						else {
@@ -896,7 +907,7 @@ public:
 
 
 						if (readType != -1 && readPosition != vf2d(-1, -1)) {
-							Item newItem = Item(newId, readType, readPosition);
+							Item newItem = Item(this, newId, readType, readPosition);
 							itemsArray.push_back(newItem); newId++;
 						}
 						else {
@@ -964,8 +975,6 @@ public:
 		}
 		else std::cout << "Unable to open file" << std::endl;
 	}
-
-
 
 	void SaveMap(std::string mapName) {
 
@@ -1061,15 +1070,7 @@ public:
 	// GAME OBJECTS
 	//===============================================================================================================================
 
-	struct Weapon {
-		float damage;
-		float fireRate;
 
-		bool onPlayer;
-
-		int currentAmmo;
-		int maxAmmo;
-	};
 
 
 	Weapon weapons[3] = {
@@ -1102,7 +1103,7 @@ public:
 
     // World objects ------------------------
 
-    Player player;
+    Player player = Player(this);
 
 
     std::vector<Thing> thingsArray;
@@ -1698,9 +1699,9 @@ public:
 	int mapPageCount = 0;
 
 
-	Slider midiVolumeSlider = Slider(vi2d(150, 80), 130, 20);
-	Slider fxVolumeSlider = Slider(vi2d(150, 110), 130, 20);
-	Slider mouseSensSlider = Slider(vi2d(150, 140), 130, 20);
+	Slider midiVolumeSlider = Slider(this, vi2d(150, 80), 130, 20);
+	Slider fxVolumeSlider = Slider(this, vi2d(150, 110), 130, 20);
+	Slider mouseSensSlider = Slider(this, vi2d(150, 140), 130, 20);
 
 
 	void DrawTitleScreen(float fElapsedTime) {
@@ -2647,7 +2648,7 @@ public:
 
 	// Controls
 	bool mouseOnUI = false;
-	vi2d mousePosPrev{ GetMouseX(), GetMouseY() };
+	vi2d mousePosPrev{ 0, 0 };
 
 
 	// Tools
@@ -2678,7 +2679,7 @@ public:
 
 
 	void Editor_PlaceDecoration() {
-		Decoration newDecoration = Decoration(newId, selectedToolDecor, vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
+		Decoration newDecoration = Decoration(this, newId, selectedToolDecor, vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
 		decorationsArray.push_back(newDecoration);
 		thingsArray.push_back(newDecoration.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -2686,7 +2687,7 @@ public:
 	}
 
 	void Editor_PlaceItem() {
-		Item newItem = Item(newId, selectedToolItem, vf2d(selectedCell.x, selectedCell.y)); newId++;
+		Item newItem = Item(this, newId, selectedToolItem, vf2d(selectedCell.x, selectedCell.y)); newId++;
 		itemsArray.push_back(newItem);
 		thingsArray.push_back(newItem.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -2694,7 +2695,7 @@ public:
 	}
 
 	void Editor_PlaceEnemy() {
-		Enemy newEnemy = Enemy(newId, selectedToolEnemy, vf2d(selectedCell.x, selectedCell.y)); newId++;
+		Enemy newEnemy = Enemy(this, newId, selectedToolEnemy, vf2d(selectedCell.x, selectedCell.y)); newId++;
 		enemiesArray.push_back(newEnemy);
 		thingsArray.push_back(newEnemy.ToThing());
 		spriteOrder = new int[thingsArray.size()];
@@ -2982,25 +2983,25 @@ public:
 
 
 
-				Button selectToolButton = Button();
+				Button selectToolButton = Button(this);
 				int textureIdx = 0;
 				switch (toolSelected)
 				{
 				case 0: // Wall
 					textureIdx = ((toolX + toolY * 7) + 21 * toolSelectionPage);
-					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
+					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
 					break;
 				case 1: // Decorations
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
+					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
 					break;
 				case 2: // Items
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, itemIconSprites[textureIdx]);
+					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, itemIconSprites[textureIdx]);
 					break;
 				case 3: // Enemies
 					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, enemyIconSprites[textureIdx]);
+					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, enemyIconSprites[textureIdx]);
 					break;
 				default:
 					break;
@@ -3012,7 +3013,7 @@ public:
 		}
 
 
-		Button selectToolNextPageButton = Button(vi2d(267, 160), 40, 20, "NEXT");
+		Button selectToolNextPageButton = Button(this, vi2d(267, 160), 40, 20, "NEXT");
 		selectToolNextPageButton.Update();
 		if (selectToolNextPageButton.isHovered) { mouseOnUI = true; }
 		if (selectToolNextPageButton.isPressed) {
@@ -3025,7 +3026,7 @@ public:
 
 		}
 
-		Button selectToolPrevPageButton = Button(vi2d(45, 160), 40, 20, "PREV");
+		Button selectToolPrevPageButton = Button(this, vi2d(45, 160), 40, 20, "PREV");
 		selectToolPrevPageButton.Update();
 		if (selectToolPrevPageButton.isHovered) { mouseOnUI = true; }
 		if (selectToolPrevPageButton.isPressed) {
@@ -3042,12 +3043,12 @@ public:
 
 
 
-	InputField mapTitleInputField = InputField(vi2d(35, 60), 170, 15, "DEFAULT");
-	InputField mapSaveFileNameInputField = InputField(vi2d(35, 95), 170, 15, "DEFAULT");
-	InputField mapSizeXInputField = InputField(vi2d(225, 60), 50, 15, "20");
-	InputField mapSizeYInputField = InputField(vi2d(225, 95), 50, 15, "20");
-	Button mapApplySizeButton = Button(vi2d(220, 150), 60, 20, "APPLY");
-	InputField nextMapFileInputField = InputField(vi2d(35, 130), 170, 15, "");
+	InputField mapTitleInputField = InputField(this, vi2d(35, 60), 170, 15, "DEFAULT");
+	InputField mapSaveFileNameInputField = InputField(this, vi2d(35, 95), 170, 15, "DEFAULT");
+	InputField mapSizeXInputField = InputField(this, vi2d(225, 60), 50, 15, "20");
+	InputField mapSizeYInputField = InputField(this, vi2d(225, 95), 50, 15, "20");
+	Button mapApplySizeButton = Button(this, vi2d(220, 150), 60, 20, "APPLY");
+	InputField nextMapFileInputField = InputField(this, vi2d(35, 130), 170, 15, "");
 
 	void Editor_ShowSettings() {
 
@@ -3140,9 +3141,9 @@ public:
 
 
 
-	InputField mapOpenFileInputField = InputField(vi2d(35, 60), 170, 15, "");
-	Button mapLoadMapButton = Button(vi2d(145, 88), 60, 20, "LOAD");
-	Button mapCloseOpenFileButton = Button(vi2d(34, 88), 60, 20, "CLOSE");
+	InputField mapOpenFileInputField = InputField(this, vi2d(35, 60), 170, 15, "");
+	Button mapLoadMapButton = Button(this, vi2d(145, 88), 60, 20, "LOAD");
+	Button mapCloseOpenFileButton = Button(this, vi2d(34, 88), 60, 20, "CLOSE");
 
 	void Editor_ShowOpenFile() {
 
@@ -3183,8 +3184,8 @@ public:
 	}
 
 
-	Button mapExitEditorButton = Button(vi2d(145, 88), 60, 20, "YES");
-	Button mapCloseExitDialogButton = Button(vi2d(34, 88), 60, 20, "NO");
+	Button mapExitEditorButton = Button(this, vi2d(145, 88), 60, 20, "YES");
+	Button mapCloseExitDialogButton = Button(this, vi2d(34, 88), 60, 20, "NO");
 
 	void Editor_ShowExitDialog() {
 
@@ -3418,7 +3419,7 @@ public:
 
 
 		// Save button
-		Button saveButton = Button(vi2d(3, 3), 22, 22, &spriteEditorSave);
+		Button saveButton = Button(this, vi2d(3, 3), 22, 22, &spriteEditorSave);
 		saveButton.showBorder = false;
 		saveButton.hoverText = "SAVE";
 		saveButton.Update();
@@ -3435,7 +3436,7 @@ public:
 		}
 
 		// Load button
-		Button loadButton = Button(vi2d(28, 3), 22, 22, &spriteEditorLoad);
+		Button loadButton = Button(this, vi2d(28, 3), 22, 22, &spriteEditorLoad);
 		loadButton.showBorder = false;
 		loadButton.hoverText = "LOAD";
 		loadButton.Update();
@@ -3447,7 +3448,7 @@ public:
 		}
 
 		// Settings button
-		Button settingsButton = Button(vi2d(53, 3), 22, 22, &spriteEditorSettings);
+		Button settingsButton = Button(this, vi2d(53, 3), 22, 22, &spriteEditorSettings);
 		settingsButton.showBorder = false;
 		settingsButton.hoverText = "SETTINGS";
 		settingsButton.Update();
@@ -3465,7 +3466,7 @@ public:
 		}
 
 		// Play button
-		Button playButton = Button(vi2d(279, 0), 30, 30, &spriteEditorPlay);
+		Button playButton = Button(this, vi2d(279, 0), 30, 30, &spriteEditorPlay);
 		playButton.showBorder = false;
 		playButton.hoverText = "PLAY";
 		playButton.Update();
@@ -3498,7 +3499,7 @@ public:
 
 
 		// Tool Wall button
-		Button toolWallButton = Button(vi2d(90, 5), 20, 20, &spriteEditorToolWall);
+		Button toolWallButton = Button(this, vi2d(90, 5), 20, 20, &spriteEditorToolWall);
 		toolWallButton.showBorder = true;
 		toolWallButton.hoverText = "WALL";
 		toolWallButton.Update();
@@ -3506,7 +3507,7 @@ public:
 		if (toolWallButton.isPressed) { toolSelected = 0; toolSelectionPage = 0; }
 
 		// Tool Decorations button
-		Button toolDecorButton = Button(vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
+		Button toolDecorButton = Button(this, vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
 		toolDecorButton.showBorder = true;
 		toolDecorButton.hoverText = "DECOR";
 		toolDecorButton.Update();
@@ -3514,7 +3515,7 @@ public:
 		if (toolDecorButton.isPressed) { toolSelected = 1; toolSelectionPage = 0; }
 
 		// Tool Items button
-		Button toolItemButton = Button(vi2d(140, 5), 20, 20, &spriteEditorToolItem);
+		Button toolItemButton = Button(this, vi2d(140, 5), 20, 20, &spriteEditorToolItem);
 		toolItemButton.showBorder = true;
 		toolItemButton.hoverText = "ITEM";
 		toolItemButton.Update();
@@ -3522,7 +3523,7 @@ public:
 		if (toolItemButton.isPressed) { toolSelected = 2; toolSelectionPage = 0; }
 
 		// Tool Enemies button
-		Button toolEnemyButton = Button(vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
+		Button toolEnemyButton = Button(this, vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
 		toolEnemyButton.showBorder = true;
 		toolEnemyButton.hoverText = "ENEMY";
 		toolEnemyButton.Update();
@@ -3533,7 +3534,7 @@ public:
 
 
 		// Tool Eraser button
-		Button toolEraserButton = Button(vi2d(3, 35), 20, 20, &spriteEditorToolEracer);
+		Button toolEraserButton = Button(this, vi2d(3, 35), 20, 20, &spriteEditorToolEracer);
 		toolEraserButton.showBorder = true;
 		toolEraserButton.hoverText = "ERASER";
 		toolEraserButton.Update();
@@ -3541,7 +3542,7 @@ public:
 		if (toolEraserButton.isPressed) { playerPosSelected = false; levelEndPosSelected = false;  eraserSelected = !eraserSelected; }
 
 		// Tool Zoom button
-		Button toolZoomButton = Button(vi2d(3, 60), 20, 20, &spriteEditorToolZoom);
+		Button toolZoomButton = Button(this, vi2d(3, 60), 20, 20, &spriteEditorToolZoom);
 		toolZoomButton.showBorder = true;
 		toolZoomButton.hoverText = "ZOOM";
 		toolZoomButton.Update();
@@ -3549,7 +3550,7 @@ public:
 		if (toolZoomButton.isPressed) editorCellSize = editorCellSize % 20 + 10;
 
 		// Tool Grid button
-		Button toolGridButton = Button(vi2d(3, 85), 20, 20, &spriteEditorToolGrid);
+		Button toolGridButton = Button(this, vi2d(3, 85), 20, 20, &spriteEditorToolGrid);
 		toolGridButton.showBorder = true;
 		toolGridButton.hoverText = "GRID";
 		toolGridButton.Update();
@@ -3557,7 +3558,7 @@ public:
 		if (toolGridButton.isPressed) showGrid = !showGrid;
 
 		// Tool Player button
-		Button toolPlayerButton = Button(vi2d(3, 125), 20, 20, &spriteEditorToolPlayer);
+		Button toolPlayerButton = Button(this, vi2d(3, 125), 20, 20, &spriteEditorToolPlayer);
 		toolPlayerButton.showBorder = true;
 		toolPlayerButton.hoverText = "START POSITION";
 		toolPlayerButton.Update();
@@ -3565,7 +3566,7 @@ public:
 		if (toolPlayerButton.isPressed) { eraserSelected = false; levelEndPosSelected = false; playerPosSelected = !playerPosSelected; }
 
 		// Tool EndLevel button
-		Button toolEndLevelButton = Button(vi2d(3, 150), 20, 20, &spriteEditorToolEndLevel);
+		Button toolEndLevelButton = Button(this, vi2d(3, 150), 20, 20, &spriteEditorToolEndLevel);
 		toolEndLevelButton.showBorder = true;
 		toolEndLevelButton.hoverText = "END LEVEL";
 		toolEndLevelButton.Update();
@@ -3577,20 +3578,20 @@ public:
 		DrawString(200, 5, "TOOL:", WHITE);
 
 		// Tool button
-		Button textureButton = Button();
+		Button textureButton = Button(this);
 		switch (toolSelected)
 		{
 		case 0: // Wall
-			textureButton = Button(vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
+			textureButton = Button(this, vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
 			break;
 		case 1: // Decorations
-			textureButton = Button(vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
+			textureButton = Button(this, vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
 			break;
 		case 2: // Items
-			textureButton = Button(vi2d(239, 2), 25, 25, itemIconSprites[selectedToolItem]);
+			textureButton = Button(this, vi2d(239, 2), 25, 25, itemIconSprites[selectedToolItem]);
 			break;
 		case 3: // Enemies
-			textureButton = Button(vi2d(239, 2), 25, 25, enemyIconSprites[selectedToolEnemy]);
+			textureButton = Button(this, vi2d(239, 2), 25, 25, enemyIconSprites[selectedToolEnemy]);
 			break;
 		}
 		textureButton.Update();
@@ -3714,7 +3715,7 @@ public:
 	void PlayMapMIDI() {
 		std::string fullMidiFileName = "sounds/" + midiFileName + ".mid";
 		char* midiCSTR = new char[fullMidiFileName.length() + 1];
-		strcpy_s(midiCSTR, fullMidiFileName.length(), fullMidiFileName.c_str());
+		strcpy_s(midiCSTR, fullMidiFileName.length() + 1, fullMidiFileName.c_str());
 
 		//std::cout << midiCSTR << std::endl;
 

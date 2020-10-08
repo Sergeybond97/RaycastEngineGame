@@ -3,8 +3,8 @@
 #include "c_engine.h"
 
 
-Thing::Thing() {
-	engine = RaycastEngine::getInstance();
+Thing::Thing(RaycastEngine* eng) {
+	engine = eng;
 	id = 0;
 	thingType = 0;
 	texture = 0;
@@ -13,8 +13,8 @@ Thing::Thing() {
 	enableCollision = true;
 	collisionSize = 0.5;
 }
-Thing::Thing(uint32_t globId, int type, int tex, vf2d pos) {
-	engine = RaycastEngine::getInstance();
+Thing::Thing(RaycastEngine* eng, uint32_t globId, int type, int tex, vf2d pos) {
+	engine = eng;
 	id = globId;
 	thingType = type;
 	texture = tex;

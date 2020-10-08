@@ -3,15 +3,15 @@
 
 
 
-InteractibleWall::InteractibleWall() {
-	engine = RaycastEngine::getInstance();
+InteractibleWall::InteractibleWall(RaycastEngine* eng) {
+	engine = eng;
 	wallPosition = vi2d(-1, -1);
 	isActive = false;
 	interactionType = InteractibleWall::InteractionType::NONE;
 }
 
-InteractibleWall::InteractibleWall(vi2d wallPos, InteractionType type) {
-	engine = RaycastEngine::getInstance();
+InteractibleWall::InteractibleWall(RaycastEngine* eng, vi2d wallPos, InteractionType type) {
+	engine = eng;
 	wallPosition = wallPos;
 	isActive = false;
 	interactionType = type;

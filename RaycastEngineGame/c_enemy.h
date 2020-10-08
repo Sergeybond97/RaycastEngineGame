@@ -7,8 +7,8 @@ class Enemy : public Thing {
 
 public:
 
-	Enemy();
-	Enemy(uint32_t globId, int tex, vf2d pos);
+	Enemy(RaycastEngine* eng);
+	Enemy(RaycastEngine* eng, uint32_t globId, int tex, vf2d pos);
 
 
 	Thing ToThing();

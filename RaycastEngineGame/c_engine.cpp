@@ -10,8 +10,7 @@
 
 
 
-//RaycastEngine* RaycastEngine::p_instance = NULL;
-
+//RaycastEngine* RaycastEngine::p_instance = nullptr;
 
 // Callback function called by the audio thread
 static void AudioCallback(void* data, Uint8* stream, int len)

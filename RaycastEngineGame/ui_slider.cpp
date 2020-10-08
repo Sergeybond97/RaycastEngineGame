@@ -2,8 +2,8 @@
 #include "c_engine.h"
 
 
-Slider::Slider() {
-	engine = RaycastEngine::getInstance();
+Slider::Slider(RaycastEngine* eng) {
+	engine = eng;
 	position = vi2d(0, 0);
 	width = 20;
 	height = 40;
@@ -21,8 +21,8 @@ Slider::Slider() {
 	value = 0.5;
 }
 
-Slider::Slider(vi2d pos, uint32_t w, uint32_t h) {
-	engine = RaycastEngine::getInstance();
+Slider::Slider(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h) {
+	engine = eng;
 	position = pos;
 	width = w;
 	height = h;

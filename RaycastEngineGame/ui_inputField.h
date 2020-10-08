@@ -41,11 +41,11 @@ public:
 
 
 
-	InputField();
+	InputField(RaycastEngine* eng);
 
-	InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt);
+	InputField(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt);
 
-	InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars);
+	InputField(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars);
 
 
 

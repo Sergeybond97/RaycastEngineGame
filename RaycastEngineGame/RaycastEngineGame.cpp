@@ -1,5 +1,5 @@
 
-
+#define OLC_PGE_APPLICATION
 #include "olcPixelGameEngine.h"
 
 #include "c_engine.h"
@@ -20,33 +20,24 @@ class PGE : public olc::PixelGameEngine
 public:
 
 	RaycastEngine* gameEngine;
-	RECore core = RECore(this);
 
 	PGE() {
-		std::cout << "PixelGameEngine Constructor" << std::endl;
-
+		std::cout << "PixelGameEngine PGE object Constructor" << std::endl;
 		sAppName = "RaycastEngine";
-
-		gameEngine = RaycastEngine::getInstance();
-		//gameEngine->engineCore = core;
 	}
 
 	bool OnUserCreate() override {
-		//gameEngine->GameStart();
+		gameEngine->GameStart();
 
 		return true;
 	}
 
 	bool OnUserUpdate(float fElapsedTime) override {
-		//gameEngine->GameUpdate(fElapsedTime);
+		gameEngine->GameUpdate(fElapsedTime);
 
 		return true;
 	}
 };
-
-PGE pixelGameEngine = PGE();
-
-
 
 
 
@@ -62,11 +53,16 @@ PGE pixelGameEngine = PGE();
 int main()
 {
 
+	PGE pixelGameEngine = PGE();
+	RECore core = RECore(&(olc::PixelGameEngine)pixelGameEngine);
+	core.pixelGameEngine = &pixelGameEngine;
+	RaycastEngine raycastEngine = RaycastEngine(&core);
+	//raycastEngine.p_instance = &raycastEngine;
+	pixelGameEngine.gameEngine = &raycastEngine;
+
 
 	ShowCursor(false);
 
-
-	std::cout << "Starting PGE" << std::endl;
 
 	if (pixelGameEngine.Construct(320, 200, 2, 2, false, true))
 		pixelGameEngine.Start();

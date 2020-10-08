@@ -2,10 +2,10 @@
 
 
 
-Decoration::Decoration() : Thing() {
+Decoration::Decoration(RaycastEngine* eng) : Thing(eng) {
 	//std::cout << "Created Decoration | ID : " << id << std::endl;
 };
-Decoration::Decoration(uint32_t globId, int tex, vf2d pos) : Thing(globId, 0, tex, pos) {
+Decoration::Decoration(RaycastEngine* eng, uint32_t globId, int tex, vf2d pos) : Thing(eng, globId, 0, tex, pos) {
 	//std::cout << "Created Decoration, param | ID : " << id << std::endl;
 
 	// Disable collision for lamps
@@ -20,7 +20,7 @@ Decoration::Decoration(uint32_t globId, int tex, vf2d pos) : Thing(globId, 0, te
 }
 
 Thing Decoration::ToThing() {
-	Thing thing = Thing(id, thingType, texture, position);
+	Thing thing = Thing(engine, id, thingType, texture, position);
 	thing.spritePartIndex = spritePartIndex;
 	thing.enableCollision = enableCollision;
 	thing.enableRender = enableRender;

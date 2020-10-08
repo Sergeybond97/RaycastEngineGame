@@ -37,9 +37,9 @@ public:
 	float value;
 
 
-	Slider();
+	Slider(RaycastEngine* eng);
 
-	Slider(vi2d pos, uint32_t w, uint32_t h);
+	Slider(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h);
 
 
 

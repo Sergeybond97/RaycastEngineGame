@@ -8,8 +8,8 @@ public:
 
 
 
-	Item();
-	Item(uint32_t globId, int tex, vf2d pos);
+	Item(RaycastEngine* eng);
+	Item(RaycastEngine* eng, uint32_t globId, int tex, vf2d pos);
 
 
 	Thing ToThing();

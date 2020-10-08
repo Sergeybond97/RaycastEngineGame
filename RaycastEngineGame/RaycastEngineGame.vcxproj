@@ -170,7 +170,6 @@
     <ClCompile Include="c_player.cpp" />
     <ClCompile Include="c_thing.cpp" />
     <ClCompile Include="minisdl_audio.c" />
-    <ClCompile Include="olcPixelGameEngine.cpp" />
     <ClCompile Include="RaycastEngineGame.cpp" />
     <ClCompile Include="r_sprite.cpp" />
     <ClCompile Include="t_imageLoader.cpp" />

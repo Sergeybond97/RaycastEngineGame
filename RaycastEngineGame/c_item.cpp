@@ -3,10 +3,10 @@
 
 
 
-Item::Item() : Thing() {
+Item::Item(RaycastEngine* eng) : Thing(eng) {
 	//std::cout << "Created Item | ID : " << id << std::endl;
 };
-Item::Item(uint32_t globId, int tex, vf2d pos) : Thing(globId, 2, tex, pos) {
+Item::Item(RaycastEngine* eng, uint32_t globId, int tex, vf2d pos) : Thing(eng, globId, 2, tex, pos) {
 	//std::cout << "Created Item, param  | ID : " << id << std::endl;
 
 	enableCollision = false;
@@ -14,7 +14,7 @@ Item::Item(uint32_t globId, int tex, vf2d pos) : Thing(globId, 2, tex, pos) {
 
 
 Thing Item::ToThing() {
-	Thing thing = Thing(id, thingType, texture, position);
+	Thing thing = Thing(engine, id, thingType, texture, position);
 	thing.spritePartIndex = spritePartIndex;
 	thing.enableCollision = enableCollision;
 	thing.enableRender = enableRender;

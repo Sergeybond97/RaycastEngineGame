@@ -1404,6 +1404,8 @@ namespace olc
 	// O------------------------------------------------------------------------------O
 	PixelGameEngine::PixelGameEngine()
 	{
+		std::cout << "Creating PixelGameEngine..." << std::endl;
+
 		sAppName = "Undefined";
 		olc::PGEX::pge = this;
 
@@ -1456,6 +1458,8 @@ namespace olc
 #if !defined(PGE_USE_CUSTOM_START)
 	olc::rcode PixelGameEngine::Start()
 	{
+		std::cout << "Starting PGE (App: " << sAppName << ")" << std::endl;
+
 		if (platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
 
 		// Construct the window
@@ -2539,6 +2543,8 @@ namespace olc
 
 	void PixelGameEngine::EngineThread()
 	{
+		std::cout << "Starting engine thread..." << std::endl;
+
 		// Allow platform to do stuff here if needed, since its now in the
 		// context of this thread
 		if (platform->ThreadStartUp() == olc::FAIL)	return;
@@ -2567,6 +2573,8 @@ namespace olc
 
 	void PixelGameEngine::olc_PrepareEngine()
 	{
+		std::cout << "Prepare engine..." << std::endl;
+
 		// Start OpenGL, the context is owned by the game thread
 		if (platform->CreateGraphics(bFullScreen, bEnableVSYNC, vViewPos, vViewSize) == olc::FAIL) return;
 
@@ -2697,6 +2705,8 @@ namespace olc
 
 	void PixelGameEngine::olc_ConstructFontSheet()
 	{
+		std::cout << "Constructing font sheet..." << std::endl;
+
 		std::string data;
 		data += "?Q`0001oOch0o01o@F40o0<AGD4090LAGD<090@A7ch0?00O7Q`0600>00000000";
 		data += "O000000nOT0063Qo4d8>?7a14Gno94AA4gno94AaOT0>o3`oO400o7QN00000400";

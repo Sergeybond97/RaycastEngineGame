@@ -29,8 +29,8 @@ public:
 	int thingType = 0; // 0 - decoration, 1 - enemy, 2 - item
 
 
-	Thing();
-	Thing(uint32_t globId, int type, int tex, vf2d pos);
+	Thing(RaycastEngine* eng);
+	Thing(RaycastEngine* eng, uint32_t globId, int type, int tex, vf2d pos);
 	bool operator == (const Thing& rhs) const { return (this->id == rhs.id && this->position == rhs.position && this->texture == rhs.texture); }
 	bool operator != (Thing& rhs) const { return (this->id != rhs.id || this->position != rhs.position || this->texture != rhs.texture); }
 

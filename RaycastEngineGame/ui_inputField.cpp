@@ -3,7 +3,8 @@
 
 
 
-InputField::InputField() {
+InputField::InputField(RaycastEngine* eng) {
+	engine = eng;
 	position = vi2d(0, 0);
 	width = 20;
 	height = 40;
@@ -23,7 +24,8 @@ InputField::InputField() {
 	allowOnlyNumbers = false;
 }
 
-InputField::InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt) {
+InputField::InputField(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt) {
+	engine = eng;
 	position = pos;
 	width = w;
 	height = h;
@@ -43,7 +45,8 @@ InputField::InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt) {
 	allowOnlyNumbers = false;
 }
 
-InputField::InputField(vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars) {
+InputField::InputField(RaycastEngine* eng, vi2d pos, uint32_t w, uint32_t h, std::string txt, int maxChars) {
+	engine = eng;
 	position = pos;
 	width = w;
 	height = h;
