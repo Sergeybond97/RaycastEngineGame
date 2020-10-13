@@ -17,6 +17,7 @@
     <ClCompile Include="ui_inputField.cpp" />
     <ClCompile Include="ui_slider.cpp" />
     <ClCompile Include="c_engine.cpp" />
+    <ClCompile Include="t_editor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="olcPixelGameEngine.h" />
@@ -109,6 +110,7 @@
     <ClInclude Include="ui_slider.h" />
     <ClInclude Include="e_core.h" />
     <ClInclude Include="e_vector.h" />
+    <ClInclude Include="t_editor.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="irrKlang">

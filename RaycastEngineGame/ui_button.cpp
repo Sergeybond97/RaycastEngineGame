@@ -72,7 +72,13 @@ void Button::Update() {
 	isPressed = false;
 	isHovered = false;
 
-	vi2d mousePos = vi2d(engine->GetMouseX(), engine->GetMouseY());
+
+	vi2d mousePos = vi2d(0, 0);
+	
+	if (engine != nullptr) {
+		mousePos = vi2d(engine->GetMouseX(), engine->GetMouseY());
+	}
+	
 	if (mousePos.x > position.x && mousePos.x < position.x + width && mousePos.y > position.y && mousePos.y < position.y + height)
 	{
 		isHovered = true;

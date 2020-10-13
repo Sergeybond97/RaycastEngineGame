@@ -43,6 +43,10 @@
 #include "t_imageLoader.h"
 
 
+// Editor
+#include "t_editor.h"
+
+
 
 
 
@@ -1765,7 +1769,7 @@ public:
 			if (GetMouse(0).bPressed) {
 
 				if (menuItemSelected == 0) { // New game
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 					// Load map
 					LoadMap("maps/LEVEL01.map");
 					gameState = GameState::STATE_LORESCREEN;
@@ -1886,7 +1890,7 @@ public:
 					soundEngine->play2D("sounds/pickup.wav", false);
 				}
 				if (menuItemSelected == 2) {
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 					// Load map
 					LoadMap(mapsToSelect[menuItemSelected - 2 + mapSelectPage * 4]);
 					gameState = GameState::STATE_GAMEPLAY;
@@ -1898,7 +1902,7 @@ public:
 					bossDefeated = 0;
 				}
 				if (menuItemSelected == 3) {
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 					// Load map
 					LoadMap(mapsToSelect[menuItemSelected - 2 + mapSelectPage * 4]);
 					gameState = GameState::STATE_GAMEPLAY;
@@ -1910,7 +1914,7 @@ public:
 					bossDefeated = 0;
 				}
 				if (menuItemSelected == 4) {
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 					// Load map
 					LoadMap(mapsToSelect[menuItemSelected - 2 + mapSelectPage * 4]);
 					gameState = GameState::STATE_GAMEPLAY;
@@ -1922,7 +1926,7 @@ public:
 					bossDefeated = 0;
 				}
 				if (menuItemSelected == 5) {
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 					// Load map
 					LoadMap(mapsToSelect[menuItemSelected - 2 + mapSelectPage * 4]);
 					gameState = GameState::STATE_GAMEPLAY;
@@ -2506,7 +2510,7 @@ public:
 
 	void UserControls(float fElapsedTime) {
 
-		if (!isMenuOpen && !isEditorOpened && player.isAlive) {
+		if (!isMenuOpen && !mapEditor.isEditorOpened && player.isAlive) {
 
 			// Clear inputs ---------------------------------------------------------
 
@@ -2610,7 +2614,7 @@ public:
 
 		// Mouse controls ------------------------------------------------------
 
-		if (IsFocused() && !isMenuOpen && !isEditorOpened) {
+		if (IsFocused() && !isMenuOpen && !mapEditor.isEditorOpened) {
 			if (GetWindowMouse().x != 0 && GetWindowMouse().y != 0) { // To prevent cursor set while dragging window
 
 				float deltaMouseX = 0.05 * mouseSensitivity * (GetWindowMouse().x - GetWindowSize().x / 2) / (fElapsedTime / 0.016);
@@ -2632,1072 +2636,8 @@ public:
 	// MAP EDITOR 
 	//===============================================================================================================================
 
-	bool isEditorOpened = false;
-	bool isEditorInPlayMode = false;
-
-
-	vi2d gridShift{ 0,0 };
-	vi2d gridOrigin{ 0,0 };
-
-	int editorCellSize = 20;
-	bool showGrid = true;
-
-
-	vf2d selectedCell{ 0,0 };
-
-
-	// Controls
-	bool mouseOnUI = false;
-	vi2d mousePosPrev{ 0, 0 };
-
-
-	// Tools
-	int toolSelected = 0;
-	bool eraserSelected = false;
-	bool playerPosSelected = false;
-	bool levelEndPosSelected = false;
-
-
-	int selectedToolWall = 0;
-	int selectedToolDecor = 0;
-	int selectedToolItem = 0;
-	int selectedToolEnemy = 0;
-
-
-	// Windows
-	bool showToolSelection = false;
-	int toolSelectionPage = 0;
-	bool showSettings = false;
-	bool showOpenFile = false;
-	bool showExitDialog = false;
-
-	// Infolog
-	std::string editor_infoLog = "";
-	float editor_infoLogTimer = 0;
-
-
-
-
-	void Editor_PlaceDecoration() {
-		Decoration newDecoration = Decoration(this, newId, selectedToolDecor, vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5)); newId++;
-		decorationsArray.push_back(newDecoration);
-		thingsArray.push_back(newDecoration.ToThing());
-		spriteOrder = new int[thingsArray.size()];
-		spriteDistance = new float[thingsArray.size()];
-	}
-
-	void Editor_PlaceItem() {
-		Item newItem = Item(this, newId, selectedToolItem, vf2d(selectedCell.x, selectedCell.y)); newId++;
-		itemsArray.push_back(newItem);
-		thingsArray.push_back(newItem.ToThing());
-		spriteOrder = new int[thingsArray.size()];
-		spriteDistance = new float[thingsArray.size()];
-	}
-
-	void Editor_PlaceEnemy() {
-		Enemy newEnemy = Enemy(this, newId, selectedToolEnemy, vf2d(selectedCell.x, selectedCell.y)); newId++;
-		enemiesArray.push_back(newEnemy);
-		thingsArray.push_back(newEnemy.ToThing());
-		spriteOrder = new int[thingsArray.size()];
-		spriteDistance = new float[thingsArray.size()];
-	}
-
-
-
-	void Editor_EraceDecorations() {
-
-		for (int i = 0; i < decorationsArray.size(); i++) {
-			if
-				(
-					decorationsArray[i].position.x >= selectedCell.x &&
-					decorationsArray[i].position.x <= selectedCell.x + 1 &&
-					decorationsArray[i].position.y >= selectedCell.y &&
-					decorationsArray[i].position.y <= selectedCell.y + 1
-					)
-			{
-				int decorId = decorationsArray[i].id;
-				std::cout << "Decor to erase : ID : " << decorId << std::endl;
-
-				for (int t = 0; t < thingsArray.size(); t++) {
-					if (thingsArray[t].id == decorId) {
-						std::swap(thingsArray[t], thingsArray[thingsArray.size() - 1]);
-						thingsArray.pop_back();
-					}
-				}
-
-				std::swap(decorationsArray[i], decorationsArray[decorationsArray.size() - 1]);
-				decorationsArray.pop_back();
-
-
-				editor_infoLog = "Eraced Decor ID : " + std::to_string(decorId);
-				editor_infoLogTimer = 1;
-				return;
-			}
-		}
-	}
-
-	void Editor_EraceItems() {
-
-		for (int i = 0; i < itemsArray.size(); i++) {
-			if
-				(
-					itemsArray[i].position.x >= selectedCell.x &&
-					itemsArray[i].position.x <= selectedCell.x + 1 &&
-					itemsArray[i].position.y >= selectedCell.y &&
-					itemsArray[i].position.y <= selectedCell.y + 1
-					)
-			{
-				int itemId = itemsArray[i].id;
-				std::cout << "Item to erase : ID : " << itemId << std::endl;
-
-				for (int t = 0; t < thingsArray.size(); t++) {
-					if (thingsArray[t].id == itemId) {
-						std::swap(thingsArray[t], thingsArray[thingsArray.size() - 1]);
-						thingsArray.pop_back();
-					}
-				}
-
-				std::swap(itemsArray[i], itemsArray[itemsArray.size() - 1]);
-				itemsArray.pop_back();
-
-				editor_infoLog = "Eraced Item ID : " + std::to_string(itemId);
-				editor_infoLogTimer = 1;
-				return;
-			}
-		}
-	}
-
-	void Editor_EraceEnemies() {
-
-		for (int i = 0; i < enemiesArray.size(); i++) {
-			if
-				(
-					enemiesArray[i].position.x >= selectedCell.x &&
-					enemiesArray[i].position.x <= selectedCell.x + 1 &&
-					enemiesArray[i].position.y >= selectedCell.y &&
-					enemiesArray[i].position.y <= selectedCell.y + 1
-					)
-			{
-				int enemyId = enemiesArray[i].id;
-				std::cout << "Enemy to erase : ID : " << enemyId << std::endl;
-
-				for (int t = 0; t < thingsArray.size(); t++) {
-					if (thingsArray[t].id == enemyId) {
-						std::swap(thingsArray[t], thingsArray[thingsArray.size() - 1]);
-						thingsArray.pop_back();
-					}
-				}
-
-				std::swap(enemiesArray[i], enemiesArray[enemiesArray.size() - 1]);
-				enemiesArray.pop_back();
-
-				editor_infoLog = "Eraced Enemy ID : " + std::to_string(enemyId);
-				editor_infoLogTimer = 1;
-				return;
-			}
-		}
-	}
-
-
-
-	void Editor_SelectTool(int idx) {
-		switch (toolSelected)
-		{
-		case 0:
-			selectedToolWall = idx;
-			break;
-		case 1:
-			selectedToolDecor = idx;
-
-			break;
-		case 2:
-			selectedToolItem = idx;
-			break;
-		case 3:
-			selectedToolEnemy = idx;
-			break;
-		default:
-			break;
-		}
-	}
-
-
-
-	void Editor_Controls(float fElapsedTime) {
-
-		// Mouse movement
-		if (GetMouse(1).bHeld) {
-			gridShift.x = (gridShift.x + (GetMouseX() - mousePosPrev.x)) % 20;
-			gridOrigin.x = gridOrigin.x + (GetMouseX() - mousePosPrev.x);
-
-			gridShift.y = (gridShift.y + (GetMouseY() - mousePosPrev.y)) % 20;
-			gridOrigin.y = gridOrigin.y + (GetMouseY() - mousePosPrev.y);
-		}
-		mousePosPrev = vi2d(GetMouseX(), GetMouseY());
-
-
-		// Arrow control
-		if (GetKey(Key::LEFT).bHeld || GetKey(Key::A).bHeld) {
-			gridShift.x = (gridShift.x + int(10 * (fElapsedTime / 0.016))) % 20;
-			gridOrigin.x = gridOrigin.x + int(10 * (fElapsedTime / 0.016));
-		}
-		if (GetKey(Key::RIGHT).bHeld || GetKey(Key::D).bHeld) {
-			gridShift.x = (gridShift.x - int(10 * (fElapsedTime / 0.016))) % 20;
-			gridOrigin.x = gridOrigin.x - int(10 * (fElapsedTime / 0.016));
-		}
-		if (GetKey(Key::UP).bHeld || GetKey(Key::W).bHeld) {
-			gridShift.y = (gridShift.y + int(10 * (fElapsedTime / 0.016))) % 20;
-			gridOrigin.y = gridOrigin.y + int(10 * (fElapsedTime / 0.016));
-		}
-		if (GetKey(Key::DOWN).bHeld || GetKey(Key::S).bHeld) {
-			gridShift.y = (gridShift.y - int(10 * (fElapsedTime / 0.016))) % 20;
-			gridOrigin.y = gridOrigin.y - int(10 * (fElapsedTime / 0.016));
-		}
-
-
-
-		if (GetKey(Key::NP_ADD).bPressed) {
-			editorCellSize = 20;
-		}
-		if (GetKey(Key::NP_SUB).bPressed) {
-			editorCellSize = 10;
-		}
-		if (GetKey(Key::Z).bPressed) {
-			editorCellSize = editorCellSize % 20 + 10;
-		}
-		if (GetKey(Key::G).bPressed)
-		{
-			showGrid = !showGrid;
-		}
-		if (GetKey(Key::E).bPressed)
-		{
-			playerPosSelected = false;
-			levelEndPosSelected = false;
-			eraserSelected = !eraserSelected;
-		}
-		if (GetKey(Key::P).bPressed)
-		{
-			eraserSelected = false;
-			levelEndPosSelected = false;
-			playerPosSelected = !playerPosSelected;
-		}
-
-
-
-		// Place wall
-
-		if (toolSelected == 0 && !eraserSelected && !playerPosSelected && !levelEndPosSelected && GetMouse(0).bHeld) {
-			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-				worldMap[selectedCell.y * worldMapWidth + selectedCell.x] = selectedToolWall + 1;
-			}
-		}
-
-		// Place object
-
-		if (toolSelected != 0 && !eraserSelected && !playerPosSelected && !levelEndPosSelected && GetMouse(0).bPressed) {
-			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-				if (toolSelected == 1) { // Decor
-					Editor_PlaceDecoration();
-				}
-				else if (toolSelected == 2) { // Item
-					Editor_PlaceItem();
-				}
-				else if (toolSelected == 3) { // Enemy
-					Editor_PlaceEnemy();
-				}
-
-			}
-		}
-
-		// Erace
-
-		if (eraserSelected && !playerPosSelected && !levelEndPosSelected && GetMouse(0).bHeld) {
-			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-
-				if (toolSelected == 0) { // Wall
-					worldMap[selectedCell.y * worldMapWidth + selectedCell.x] = 0;
-				}
-				else if (toolSelected == 1) { // Decor
-					Editor_EraceDecorations();
-				}
-				else if (toolSelected == 2) { // Item
-					Editor_EraceItems();
-				}
-				else if (toolSelected == 3) { // Enemy
-					Editor_EraceEnemies();
-				}
-			}
-		}
-
-
-		// Place player
-
-		if (playerPosSelected && !eraserSelected && !levelEndPosSelected && GetMouse(0).bPressed) {
-			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-				player.position = vf2d(selectedCell.x + 0.5, selectedCell.y + 0.5);
-			}
-		}
-
-
-		// Place End level
-
-		if (levelEndPosSelected && !eraserSelected && !playerPosSelected && GetMouse(0).bPressed) {
-			if (selectedCell.x >= 0 && selectedCell.y >= 0 && selectedCell.x < worldMapWidth && selectedCell.y < worldMapHeight) { // Check map boundaries
-				for (int intWall = 0; intWall < interactbleWallsArray.size(); intWall++) {
-					if (interactbleWallsArray[intWall].interactionType == InteractibleWall::InteractionType::ENDLEVEL) {
-						interactbleWallsArray[intWall].wallPosition = vf2d(selectedCell.x, selectedCell.y);
-					}
-				}
-			}
-		}
-
-	}
-
-
-
-	void Editor_ShowToolSelection() {
-
-		mouseOnUI = true; // To prevent placing and moving in background
-
-		FillRect(40, 40, 273, 148, BLACK); // Background
-		FillRect(195, 30, 75, 10, BLACK); // Connection
-		DrawLine(195, 0, 195, 40, YELLOW);
-		DrawLine(270, 0, 270, 40, YELLOW);
-		DrawLine(40, 40, 195, 40, YELLOW);
-		DrawLine(270, 40, 313, 40, YELLOW);
-
-
-		int wallPageCount = ceil(wallSprites.size() / 21);
-		int decorPageCount = ceil(3 / 21);
-		int itemPageCount = ceil(itemIconSprites.size() / 21);
-		int enemyPageCount = ceil(enemyIconSprites.size() / 21);
-
-
-		for (int toolY = 0; toolY < 3; toolY++) {
-			for (int toolX = 0; toolX < 7; toolX++) {
-
-				if (toolSelected == 0 && (toolX + toolY * 7) > wallSprites.size() - 1) break; // Walls
-				if (toolSelected == 1 && (toolX + toolY * 7) > 3) break; // Decor
-				if (toolSelected == 2 && (toolX + toolY * 7) > itemIconSprites.size() - 1) break; // Item
-				if (toolSelected == 3 && (toolX + toolY * 7) > enemyIconSprites.size() - 1) break; // Enemy
-
-
-
-				Button selectToolButton = Button(this);
-				int textureIdx = 0;
-				switch (toolSelected)
-				{
-				case 0: // Wall
-					textureIdx = ((toolX + toolY * 7) + 21 * toolSelectionPage);
-					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetWallTexture(textureIdx));
-					break;
-				case 1: // Decorations
-					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, GetDecorationSprite(textureIdx));
-					break;
-				case 2: // Items
-					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, itemIconSprites[textureIdx]);
-					break;
-				case 3: // Enemies
-					textureIdx = (toolX + toolY * 7) + 21 * toolSelectionPage;
-					selectToolButton = Button(this, vi2d(45 + (toolX * (34 + 4)), 45 + (toolY * (34 + 4))), 34, 34, enemyIconSprites[textureIdx]);
-					break;
-				default:
-					break;
-				}
-				selectToolButton.Update();
-				if (selectToolButton.isHovered) { mouseOnUI = true; }
-				if (selectToolButton.isPressed) { Editor_SelectTool(textureIdx); showToolSelection = false; }
-			}
-		}
-
-
-		Button selectToolNextPageButton = Button(this, vi2d(267, 160), 40, 20, "NEXT");
-		selectToolNextPageButton.Update();
-		if (selectToolNextPageButton.isHovered) { mouseOnUI = true; }
-		if (selectToolNextPageButton.isPressed) {
-
-
-			if (toolSelected == 0 && toolSelectionPage < wallPageCount - 1) toolSelectionPage++;  // Walls
-			if (toolSelected == 1 && toolSelectionPage < decorPageCount - 1) toolSelectionPage++; // Decor
-			if (toolSelected == 2 && toolSelectionPage < itemPageCount - 1) toolSelectionPage++; // Item
-			if (toolSelected == 3 && toolSelectionPage < enemyPageCount - 1) toolSelectionPage++; // Enemy
-
-		}
-
-		Button selectToolPrevPageButton = Button(this, vi2d(45, 160), 40, 20, "PREV");
-		selectToolPrevPageButton.Update();
-		if (selectToolPrevPageButton.isHovered) { mouseOnUI = true; }
-		if (selectToolPrevPageButton.isPressed) {
-			if (toolSelectionPage > 0) toolSelectionPage--;
-		}
-
-
-		// Ooooh, this is bad...... But i dont have other solution at this moment :(
-		if (!(GetMouseX() > 40 && GetMouseX() < 313 && GetMouseY() > 40 && GetMouseY() < 182) && !(GetMouseX() > 195 && GetMouseX() < 270 && GetMouseY() > 0 && GetMouseY() < 40) && GetMouse(0).bPressed) {
-			showToolSelection = false;
-		}
-
-	}
-
-
-
-	InputField mapTitleInputField = InputField(this, vi2d(35, 60), 170, 15, "DEFAULT");
-	InputField mapSaveFileNameInputField = InputField(this, vi2d(35, 95), 170, 15, "DEFAULT");
-	InputField mapSizeXInputField = InputField(this, vi2d(225, 60), 50, 15, "20");
-	InputField mapSizeYInputField = InputField(this, vi2d(225, 95), 50, 15, "20");
-	Button mapApplySizeButton = Button(this, vi2d(220, 150), 60, 20, "APPLY");
-	InputField nextMapFileInputField = InputField(this, vi2d(35, 130), 170, 15, "");
-
-	void Editor_ShowSettings() {
-
-		mouseOnUI = true; // To prevent placing and moving in background
-
-		FillRect(20, 40, 273, 142, BLACK); // Background
-		FillRect(48, 30, 30, 10, BLACK); // Connection
-		DrawLine(48, 0, 48, 40, YELLOW);
-		DrawLine(78, 0, 78, 40, YELLOW);
-		DrawLine(20, 40, 48, 40, YELLOW);
-		DrawLine(78, 40, 292, 40, YELLOW);
-
-
-
-		DrawString(vi2d(35, 50), "MAP TITLE");
-		mapTitleInputField.Update();
-		if (mapTitleInputField.isHovered) { mouseOnUI = true; }
-		if (mapTitleInputField.isPressed) { mapTitleInputField.isFocused = true; }
-
-		DrawString(vi2d(35, 85), "SAVE FILE NAME");
-		mapSaveFileNameInputField.Update();
-		if (mapSaveFileNameInputField.isHovered) { mouseOnUI = true; }
-		if (mapSaveFileNameInputField.isPressed) { mapSaveFileNameInputField.isFocused = true; }
-
-		DrawString(vi2d(225, 50), "SIZE X");
-		mapSizeXInputField.allowOnlyNumbers = true;
-		mapSizeXInputField.charMaximum = 4;
-		mapSizeXInputField.Update();
-		if (mapSizeXInputField.isHovered) { mouseOnUI = true; }
-		if (mapSizeXInputField.isPressed) { mapSizeXInputField.isFocused = true; }
-
-		DrawString(vi2d(225, 85), "SIZE Y");
-		mapSizeYInputField.allowOnlyNumbers = true;
-		mapSizeYInputField.charMaximum = 4;
-		mapSizeYInputField.Update();
-		if (mapSizeYInputField.isHovered) { mouseOnUI = true; }
-		if (mapSizeYInputField.isPressed) { mapSizeYInputField.isFocused = true; }
-
-
-		DrawString(vi2d(35, 120), "NEXT MAP FILE NAME");
-		nextMapFileInputField.Update();
-		if (nextMapFileInputField.isHovered) { mouseOnUI = true; }
-		if (nextMapFileInputField.isPressed) { nextMapFileInputField.isFocused = true; }
-
-
-		mapApplySizeButton.Update();
-		mapApplySizeButton.colorBackground = DARK_GREEN;
-		if (mapApplySizeButton.isHovered) { mouseOnUI = true; }
-		if (mapApplySizeButton.isPressed)
-		{
-			// Check minimal map size
-			int sizeX = std::stoi(mapSizeXInputField.text);
-			int sizeY = std::stoi(mapSizeYInputField.text);
-			if (sizeX < 5) {
-				sizeX = 5;
-				mapSizeXInputField.text = "5";
-			}
-			if (sizeY < 5) {
-				sizeY = 5;
-				mapSizeXInputField.text = "5";
-			}
-
-			// Change map size
-			ChangeMapSize(sizeX, sizeY);
-			mapSizeXInputField.text = std::to_string(worldMapWidth);
-			mapSizeYInputField.text = std::to_string(worldMapHeight);
-
-
-			// Map files
-			worldMapName = mapTitleInputField.text;
-			worldMapFile = mapSaveFileNameInputField.text;
-			worldMapNextMapFile = nextMapFileInputField.text;
-
-			// Check if player stay on map
-			if (player.position.x >= worldMapWidth || player.position.y >= worldMapHeight) {
-				player.position = vf2d(1.5, 1.5);
-				editor_infoLog = "Player moved to (1, 1)";
-				editor_infoLogTimer = 2;
-			}
-		}
-
-
-
-		// Ooooh, this is bad...... But i dont have other solution at this moment :(
-		if (!(GetMouseX() > 20 && GetMouseX() < 292 && GetMouseY() > 40 && GetMouseY() < 182) && !(GetMouseX() > 48 && GetMouseX() < 78 && GetMouseY() > 0 && GetMouseY() < 40) && GetMouse(0).bPressed) {
-			showSettings = false;
-		}
-	}
-
-
-
-
-	InputField mapOpenFileInputField = InputField(this, vi2d(35, 60), 170, 15, "");
-	Button mapLoadMapButton = Button(this, vi2d(145, 88), 60, 20, "LOAD");
-	Button mapCloseOpenFileButton = Button(this, vi2d(34, 88), 60, 20, "CLOSE");
-
-	void Editor_ShowOpenFile() {
-
-		mouseOnUI = true; // To prevent placing and moving in background
-
-		FillRect(20, 40, 200, 80, BLACK); // Background
-		DrawLine(20, 40, 219, 40, YELLOW);
-
-		DrawString(vi2d(35, 50), "FILE NAME TO OPEN");
-		mapOpenFileInputField.Update();
-		if (mapOpenFileInputField.isHovered) { mouseOnUI = true; }
-		if (mapOpenFileInputField.isPressed) { mapOpenFileInputField.isFocused = true; }
-
-
-		mapLoadMapButton.Update();
-		mapLoadMapButton.colorBackground = DARK_GREEN;
-		if (mapLoadMapButton.isHovered) { mouseOnUI = true; }
-		if (mapLoadMapButton.isPressed)
-		{
-			worldMapFile = mapOpenFileInputField.text;
-			std::string loadFile = "maps/" + worldMapFile + ".map";
-			LoadMap(loadFile);
-			mapSizeXInputField.text = std::to_string(worldMapWidth);
-			mapSizeYInputField.text = std::to_string(worldMapHeight);
-			mapTitleInputField.text = worldMapName;
-			mapSaveFileNameInputField.text = worldMapFile;
-			nextMapFileInputField.text = worldMapNextMapFile;
-		}
-
-		mapCloseOpenFileButton.Update();
-		mapCloseOpenFileButton.colorBackground = DARK_RED;
-		if (mapCloseOpenFileButton.isHovered) { mouseOnUI = true; }
-		if (mapCloseOpenFileButton.isPressed)
-		{
-			showOpenFile = false;
-		}
-
-	}
-
-
-	Button mapExitEditorButton = Button(this, vi2d(145, 88), 60, 20, "YES");
-	Button mapCloseExitDialogButton = Button(this, vi2d(34, 88), 60, 20, "NO");
-
-	void Editor_ShowExitDialog() {
-
-		mouseOnUI = true; // To prevent placing and moving in background
-
-		FillRect(20, 40, 200, 80, BLACK); // Background
-		DrawLine(20, 40, 219, 40, YELLOW);
-
-		DrawString(vi2d(35, 50), "EXIT EDITOR ?");
-
-		mapExitEditorButton.Update();
-		mapExitEditorButton.colorBackground = DARK_GREEN;
-		if (mapExitEditorButton.isHovered) { mouseOnUI = true; }
-		if (mapExitEditorButton.isPressed)
-		{
-			showExitDialog = false;
-			gameState = GameState::STATE_TITLESCREEN;
-		}
-
-		mapCloseExitDialogButton.Update();
-		mapCloseExitDialogButton.colorBackground = DARK_RED;
-		if (mapCloseExitDialogButton.isHovered) { mouseOnUI = true; }
-		if (mapCloseExitDialogButton.isPressed)
-		{
-			LoadDefaultMap();
-			showExitDialog = false;
-		}
-
-	}
-
-
-	void Editor_DrawEditor(float fElapsedTime) {
-
-
-		mouseOnUI = false;
-
-
-
-
-		// Background -----------------------
-
-		FillRect(0, 0, ScreenWidth(), ScreenHeight(), VERY_DARK_GREY);
-
-
-		// Draw map -----------------------
-
-		int sampleSize = editorCellSize - 1 + !showGrid; // Little optimisation
-
-		for (int i = 0; i < worldMapWidth; i++) {
-			for (int j = 0; j < worldMapHeight; j++) {
-
-				if (worldMap[j * worldMapWidth + i] != 0) {
-					for (int smplX = 0; smplX < sampleSize; smplX++) {
-						for (int smplY = 0; smplY < sampleSize; smplY++) {
-							Color color = GetWallTexture(worldMap[j * worldMapWidth + i] - 1)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
-							Draw(gridOrigin.x + 1 + smplX + i * editorCellSize, gridOrigin.y + 1 + smplY + j * editorCellSize, color);
-						}
-					}
-				}
-			}
-		}
-
-
-
-		// Grid -----------------------
-
-		if (showGrid) {
-			// Vertical lines
-			for (int i = 0; i < int(ScreenWidth() / editorCellSize) + 2; i++) {
-				DrawLine(i * editorCellSize + gridShift.x, 0, i * editorCellSize + gridShift.x, ScreenHeight(), GREY);
-			}
-			// Horisontal lines
-			for (int j = 0; j < int(ScreenHeight() / editorCellSize) + 2; j++) {
-				DrawLine(0, j * editorCellSize + gridShift.y, ScreenWidth(), j * editorCellSize + gridShift.y, GREY);
-			}
-
-
-			// Draw grid origin
-			DrawLine(gridOrigin.x, 0, gridOrigin.x, ScreenHeight(), YELLOW);
-			DrawLine(0, gridOrigin.y, ScreenWidth(), gridOrigin.y, YELLOW);
-
-			// Draw end of map
-			DrawLine(gridOrigin.x + worldMapWidth * editorCellSize, 0, gridOrigin.x + worldMapWidth * editorCellSize, ScreenHeight(), RED);
-			DrawLine(0, gridOrigin.y + worldMapHeight * editorCellSize, ScreenWidth(), gridOrigin.y + worldMapHeight * editorCellSize, RED);
-		}
-
-
-
-		// Draw objects -----------------------
-
-
-		//
-		// Note : decorationsArray[d].position.x - 0.5 in fact tells that i need to shift sprite half size
-		//
-
-		// Draw Decorations
-
-		for (int d = 0; d < decorationsArray.size(); d++) {
-
-			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
-				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					Color color = GetDecorationSprite(decorationsArray[d].texture)->GetPixel(int(64.0 / editorCellSize * smplX), int(64.0 / editorCellSize * smplY));
-					if (color != CYAN) {
-						int pixelPosX = gridOrigin.x + 1 + smplX + (decorationsArray[d].position.x - 0.5) * editorCellSize;
-						int pixelPosY = gridOrigin.y + 1 + smplY + (decorationsArray[d].position.y - 0.5) * editorCellSize;
-						Draw(pixelPosX, pixelPosY, color);
-					}
-				}
-			}
-		}
-
-		// Draw Items
-
-		for (int i = 0; i < itemsArray.size(); i++) {
-
-			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
-				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					Color color = itemIconSprites[itemsArray[i].texture]->GetPixel(floor((float)itemIconSprites[itemsArray[i].texture]->width / editorCellSize * smplX), floor((float)itemIconSprites[itemsArray[i].texture]->height / editorCellSize * smplY));
-					if (color != CYAN) {
-						int pixelPosX = gridOrigin.x + 1 + smplX + (itemsArray[i].position.x - 0.5) * editorCellSize;
-						int pixelPosY = gridOrigin.y + 1 + smplY + (itemsArray[i].position.y - 0.5) * editorCellSize;
-						Draw(pixelPosX, pixelPosY, color);
-					}
-				}
-			}
-		}
-
-		// Draw Enemies
-
-		for (int d = 0; d < enemiesArray.size(); d++) {
-
-			for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
-				for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-					Color color = enemyIconSprites[enemiesArray[d].texture]->GetPixel(int((float)enemyIconSprites[enemiesArray[d].texture]->width / editorCellSize * smplX), int((float)enemyIconSprites[enemiesArray[d].texture]->height / editorCellSize * smplY));
-					if (color != CYAN) {
-						int pixelPosX = gridOrigin.x + 1 + smplX + (enemiesArray[d].position.x - 0.5) * editorCellSize;
-						int pixelPosY = gridOrigin.y + 1 + smplY + (enemiesArray[d].position.y - 0.5) * editorCellSize;
-						Draw(pixelPosX, pixelPosY, color);
-					}
-				}
-			}
-		}
-
-		// Draw Player
-
-		for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
-			for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-				Color color = spriteEditorToolPlayer.GetPixel(int((float)spriteEditorToolPlayer.width / editorCellSize * smplX), int((float)spriteEditorToolPlayer.height / editorCellSize * smplY));
-				if (color != CYAN) {
-					int pixelPosX = gridOrigin.x + smplX + (player.position.x - 0.5) * editorCellSize;
-					int pixelPosY = gridOrigin.y + smplY + (player.position.y - 0.5) * editorCellSize;
-					Draw(pixelPosX, pixelPosY, color);
-				}
-			}
-		}
-
-
-		// Draw End level
-
-		for (int intWall = 0; intWall < interactbleWallsArray.size(); intWall++) {
-			if (interactbleWallsArray[intWall].interactionType == InteractibleWall::InteractionType::ENDLEVEL) {
-				for (int smplX = 0; smplX < editorCellSize - 1; smplX++) {
-					for (int smplY = 0; smplY < editorCellSize - 1; smplY++) {
-						Color color = spriteEditorToolEndLevel.GetPixel(int((float)spriteEditorToolEndLevel.width / editorCellSize * smplX), int((float)spriteEditorToolEndLevel.height / editorCellSize * smplY));
-						if (color != CYAN) {
-							int pixelPosX = gridOrigin.x + smplX + (interactbleWallsArray[intWall].wallPosition.x) * editorCellSize;
-							int pixelPosY = gridOrigin.y + smplY + (interactbleWallsArray[intWall].wallPosition.y) * editorCellSize;
-							Draw(pixelPosX, pixelPosY, color);
-						}
-					}
-				}
-			}
-		}
-
-
-
-		// Cell selection ----------------------- 
-
-		selectedCell.x = (GetMouseX() - gridOrigin.x) / (editorCellSize * 1.0);
-		selectedCell.y = (GetMouseY() - gridOrigin.y) / (editorCellSize * 1.0);
-
-
-		if (toolSelected == 0 || toolSelected == 1 || eraserSelected) { // Wall or Decoration
-
-			selectedCell.x = floor(selectedCell.x);
-			selectedCell.y = floor(selectedCell.y);
-
-			// Rectangle
-			DrawRect(gridOrigin.x + selectedCell.x * editorCellSize, gridOrigin.y + selectedCell.y * editorCellSize, editorCellSize, editorCellSize, RED);
-
-			std::string cellXText = std::to_string(selectedCell.x);
-			std::string cellYText = std::to_string(selectedCell.y);
-			std::string cellText = cellXText.substr(0, cellXText.length() - 5) + " " + cellYText.substr(0, cellYText.length() - 5);
-			DrawString(5, ScreenHeight() - 10, cellText);
-		}
-		else if (toolSelected == 2 || toolSelected == 3) { // Items or Enemy
-
-			selectedCell.x = (floor(selectedCell.x * 2)) / 2; // Round to the nearest 0.5 
-			selectedCell.y = (floor(selectedCell.y * 2)) / 2;
-
-			// Dot
-			FillRect(gridOrigin.x + selectedCell.x * editorCellSize - 3, gridOrigin.y + selectedCell.y * editorCellSize - 3, 7, 7, RED);
-
-			std::string cellXText = std::to_string(selectedCell.x);
-			std::string cellYText = std::to_string(selectedCell.y);
-			std::string cellText = cellXText.substr(0, cellXText.length() - 5) + " " + cellYText.substr(0, cellYText.length() - 5);
-			DrawString(5, ScreenHeight() - 10, cellText);
-		}
-
-
-
-
-
-		// UI -----------------------
-
-		// Hovering text
-		std::string hoverText = "";
-
-		// Debug
-		//int debugMX = GetMouseX();
-		//int debugMY = GetMouseY();
-		//std::string debugMText = std::to_string(debugMX) + " " + std::to_string(debugMY);
-		//DrawString(200, 180, debugMText, olc::WHITE);
-
-
-		// Upper menu background
-		FillRect(0, 0, 320, 30, BLACK);
-
-
-
-
-
-		// Save button
-		Button saveButton = Button(this, vi2d(3, 3), 22, 22, &spriteEditorSave);
-		saveButton.showBorder = false;
-		saveButton.hoverText = "SAVE";
-		saveButton.Update();
-		if (saveButton.isHovered) { mouseOnUI = true; hoverText = saveButton.hoverText; }
-		if (saveButton.isPressed)
-		{
-			worldMapName = mapTitleInputField.text;
-			worldMapFile = mapSaveFileNameInputField.text;
-			std::string saveFile = "maps/" + worldMapFile + ".map";
-			SaveMap(saveFile);
-
-			editor_infoLogTimer = 2;
-			editor_infoLog = "Map saved as : " + saveFile;
-		}
-
-		// Load button
-		Button loadButton = Button(this, vi2d(28, 3), 22, 22, &spriteEditorLoad);
-		loadButton.showBorder = false;
-		loadButton.hoverText = "LOAD";
-		loadButton.Update();
-		if (loadButton.isHovered) { mouseOnUI = true; hoverText = loadButton.hoverText; }
-		if (loadButton.isPressed) {
-			showToolSelection = false;
-			showSettings = false;
-			showOpenFile = true;
-		}
-
-		// Settings button
-		Button settingsButton = Button(this, vi2d(53, 3), 22, 22, &spriteEditorSettings);
-		settingsButton.showBorder = false;
-		settingsButton.hoverText = "SETTINGS";
-		settingsButton.Update();
-		if (settingsButton.isHovered) { mouseOnUI = true; hoverText = settingsButton.hoverText; }
-		if (settingsButton.isPressed) {
-			showSettings = !showSettings;
-			showToolSelection = false;
-			showOpenFile = false;
-
-			mapSizeXInputField.text = std::to_string(worldMapWidth);
-			mapSizeYInputField.text = std::to_string(worldMapHeight);
-			mapTitleInputField.text = worldMapName;
-			mapSaveFileNameInputField.text = worldMapFile;
-			nextMapFileInputField.text = worldMapNextMapFile;
-		}
-
-		// Play button
-		Button playButton = Button(this, vi2d(279, 0), 30, 30, &spriteEditorPlay);
-		playButton.showBorder = false;
-		playButton.hoverText = "PLAY";
-		playButton.Update();
-		if (playButton.isHovered) { mouseOnUI = true; hoverText = playButton.hoverText; }
-		if (playButton.isPressed)
-		{
-			// Save
-			worldMapName = mapTitleInputField.text;
-			worldMapFile = mapSaveFileNameInputField.text;
-			std::string saveFile = "maps/" + worldMapFile + ".map";
-			SaveMap(saveFile);
-
-			editor_infoLogTimer = 2;
-			editor_infoLog = "Map saved as : " + saveFile;
-
-			// Load
-			isEditorInPlayMode = true;
-			std::string loadFile = "maps/" + worldMapFile + ".map";
-			LoadMap(loadFile);
-
-			// Start MIDI
-			PlayMapMIDI();
-
-			// Play
-			player.Ressurect();
-			gameState = STATE_GAMEPLAY;
-		}
-
-
-
-
-		// Tool Wall button
-		Button toolWallButton = Button(this, vi2d(90, 5), 20, 20, &spriteEditorToolWall);
-		toolWallButton.showBorder = true;
-		toolWallButton.hoverText = "WALL";
-		toolWallButton.Update();
-		if (toolWallButton.isHovered) { mouseOnUI = true; hoverText = toolWallButton.hoverText; }
-		if (toolWallButton.isPressed) { toolSelected = 0; toolSelectionPage = 0; }
-
-		// Tool Decorations button
-		Button toolDecorButton = Button(this, vi2d(115, 5), 20, 20, &spriteEditorToolDecor);
-		toolDecorButton.showBorder = true;
-		toolDecorButton.hoverText = "DECOR";
-		toolDecorButton.Update();
-		if (toolDecorButton.isHovered) { mouseOnUI = true; hoverText = toolDecorButton.hoverText; }
-		if (toolDecorButton.isPressed) { toolSelected = 1; toolSelectionPage = 0; }
-
-		// Tool Items button
-		Button toolItemButton = Button(this, vi2d(140, 5), 20, 20, &spriteEditorToolItem);
-		toolItemButton.showBorder = true;
-		toolItemButton.hoverText = "ITEM";
-		toolItemButton.Update();
-		if (toolItemButton.isHovered) { mouseOnUI = true; hoverText = toolItemButton.hoverText; }
-		if (toolItemButton.isPressed) { toolSelected = 2; toolSelectionPage = 0; }
-
-		// Tool Enemies button
-		Button toolEnemyButton = Button(this, vi2d(165, 5), 20, 20, &spriteEditorToolEnemy);
-		toolEnemyButton.showBorder = true;
-		toolEnemyButton.hoverText = "ENEMY";
-		toolEnemyButton.Update();
-		if (toolEnemyButton.isHovered) { mouseOnUI = true; hoverText = toolEnemyButton.hoverText; }
-		if (toolEnemyButton.isPressed) { toolSelected = 3; toolSelectionPage = 0; }
-
-
-
-
-		// Tool Eraser button
-		Button toolEraserButton = Button(this, vi2d(3, 35), 20, 20, &spriteEditorToolEracer);
-		toolEraserButton.showBorder = true;
-		toolEraserButton.hoverText = "ERASER";
-		toolEraserButton.Update();
-		if (toolEraserButton.isHovered) { mouseOnUI = true; hoverText = toolEraserButton.hoverText; }
-		if (toolEraserButton.isPressed) { playerPosSelected = false; levelEndPosSelected = false;  eraserSelected = !eraserSelected; }
-
-		// Tool Zoom button
-		Button toolZoomButton = Button(this, vi2d(3, 60), 20, 20, &spriteEditorToolZoom);
-		toolZoomButton.showBorder = true;
-		toolZoomButton.hoverText = "ZOOM";
-		toolZoomButton.Update();
-		if (toolZoomButton.isHovered) { mouseOnUI = true; hoverText = toolZoomButton.hoverText; }
-		if (toolZoomButton.isPressed) editorCellSize = editorCellSize % 20 + 10;
-
-		// Tool Grid button
-		Button toolGridButton = Button(this, vi2d(3, 85), 20, 20, &spriteEditorToolGrid);
-		toolGridButton.showBorder = true;
-		toolGridButton.hoverText = "GRID";
-		toolGridButton.Update();
-		if (toolGridButton.isHovered) { mouseOnUI = true; hoverText = toolGridButton.hoverText; }
-		if (toolGridButton.isPressed) showGrid = !showGrid;
-
-		// Tool Player button
-		Button toolPlayerButton = Button(this, vi2d(3, 125), 20, 20, &spriteEditorToolPlayer);
-		toolPlayerButton.showBorder = true;
-		toolPlayerButton.hoverText = "START POSITION";
-		toolPlayerButton.Update();
-		if (toolPlayerButton.isHovered) { mouseOnUI = true; hoverText = toolPlayerButton.hoverText; }
-		if (toolPlayerButton.isPressed) { eraserSelected = false; levelEndPosSelected = false; playerPosSelected = !playerPosSelected; }
-
-		// Tool EndLevel button
-		Button toolEndLevelButton = Button(this, vi2d(3, 150), 20, 20, &spriteEditorToolEndLevel);
-		toolEndLevelButton.showBorder = true;
-		toolEndLevelButton.hoverText = "END LEVEL";
-		toolEndLevelButton.Update();
-		if (toolEndLevelButton.isHovered) { mouseOnUI = true; hoverText = toolEndLevelButton.hoverText; }
-		if (toolEndLevelButton.isPressed) { eraserSelected = false; playerPosSelected = false; levelEndPosSelected = !levelEndPosSelected; }
-
-
-		// Tool label
-		DrawString(200, 5, "TOOL:", WHITE);
-
-		// Tool button
-		Button textureButton = Button(this);
-		switch (toolSelected)
-		{
-		case 0: // Wall
-			textureButton = Button(this, vi2d(239, 2), 25, 25, GetWallTexture(selectedToolWall));
-			break;
-		case 1: // Decorations
-			textureButton = Button(this, vi2d(239, 2), 25, 25, GetDecorationSprite(selectedToolDecor));
-			break;
-		case 2: // Items
-			textureButton = Button(this, vi2d(239, 2), 25, 25, itemIconSprites[selectedToolItem]);
-			break;
-		case 3: // Enemies
-			textureButton = Button(this, vi2d(239, 2), 25, 25, enemyIconSprites[selectedToolEnemy]);
-			break;
-		}
-		textureButton.Update();
-		if (textureButton.isHovered) { mouseOnUI = true; }
-		if (textureButton.isPressed) {
-			showToolSelection = !showToolSelection;
-			showSettings = false;
-			showOpenFile = false;
-			toolSelectionPage = 0;
-		}
-
-
-
-		// Selected tool highlighting -------------------------------
-
-		DrawRect(88 + toolSelected * 25, 3, 24, 24, YELLOW);
-		DrawRect(89 + toolSelected * 25, 4, 22, 22, YELLOW);
-
-
-		if (eraserSelected) {
-			DrawRect(2, 34, 22, 22, YELLOW);
-			DrawRect(1, 33, 24, 24, YELLOW);
-			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEracer, CYAN);
-		}
-
-		if (playerPosSelected) {
-			DrawRect(2, 124, 22, 22, YELLOW);
-			DrawRect(1, 123, 24, 24, YELLOW);
-			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolPlayer, CYAN);
-		}
-
-		if (levelEndPosSelected) {
-			DrawRect(2, 149, 22, 22, YELLOW);
-			DrawRect(1, 148, 24, 24, YELLOW);
-			// Cursor
-			DrawSpriteColorTransparent(GetMouseX() + 3, GetMouseY() + 5, &spriteEditorToolEndLevel, CYAN);
-		}
-
-
-
-		// Tool selection -----------------------
-
-		if (showToolSelection) {
-			Editor_ShowToolSelection();
-		}
-
-
-		// Settings window selection -----------------------
-
-		if (showSettings) {
-			Editor_ShowSettings();
-		}
-
-		// Open file window -----------------------
-
-		if (showOpenFile) {
-			Editor_ShowOpenFile();
-		}
-
-		// Open exit dialog -----------------------
-
-		if (showExitDialog) {
-			Editor_ShowExitDialog();
-		}
-
-
-
-		// Hovering text -----------------------
-
-		if (hoverText != "") {
-			DrawString(GetMouseX() - 1, GetMouseY() + 18, hoverText, BLACK);
-			DrawString(GetMouseX() - 2, GetMouseY() + 17, hoverText, WHITE);
-		}
-
-
-
-
-
-		// Info log -----------------------
-
-		if (editor_infoLogTimer > 0) {
-			editor_infoLogTimer -= fElapsedTime;
-			DrawString(31, 38, editor_infoLog, BLACK);
-			DrawString(30, 37, editor_infoLog);
-		}
-
-
-
-		// Editor controls -----------------------
-
-		if (!showSettings && !showToolSelection && !showOpenFile && !showExitDialog && !mouseOnUI) {
-			Editor_Controls(fElapsedTime);
-		}
-
-
-
-		// Exit editor -----------------------
-
-		if (GetKey(Key::ESCAPE).bPressed) {
-			showExitDialog = true;
-		}
-
-
-	}
+	
+	Editor mapEditor = Editor(this);
 
 
 
@@ -3708,8 +2648,6 @@ public:
 		LoadMap(loadFile);
 		player.Ressurect();
 	}
-
-
 
 
 	void PlayMapMIDI() {
@@ -3731,6 +2669,10 @@ public:
 
 
 	bool GameStart() {
+
+		// Editor ====================================================================
+
+		mapEditor = Editor(this);
 
 		// Image Loader ====================================================================
 
@@ -3788,7 +2730,7 @@ public:
 
 		case STATE_GAMEPLAY:
 
-			isEditorOpened = false;
+			mapEditor.isEditorOpened = false;
 			isMenuOpen = false;
 			showCursor = false;
 
@@ -3811,12 +2753,12 @@ public:
 
 
 
-			if (isEditorInPlayMode) {
+			if (mapEditor.isEditorInPlayMode) {
 				DrawString(80, 180, "EDITOR IN PLAY MODE", WHITE);
 				DrawString(80, 190, "PRESS M TO RETURN", WHITE);
 
 				if (GetKey(Key::M).bPressed) {
-					isEditorInPlayMode = false;
+					mapEditor.isEditorInPlayMode = false;
 
 					// Load map
 					std::string loadFile = "maps/" + worldMapFile + ".map";
@@ -3850,6 +2792,7 @@ public:
 				gameState = STATE_ENDGAME;
 			}
 
+			// Just for testing
 			//if (GetKey(olc::Key::H).bPressed) {
 			//	gameState = STATE_ENDGAME;
 			//}
@@ -3885,10 +2828,10 @@ public:
 
 		case STATE_EDITOR:
 
-			isEditorOpened = true;
+			mapEditor.isEditorOpened = true;
 			showCursor = true;
 
-			Editor_DrawEditor(fElapsedTime);
+			mapEditor.DrawEditor(fElapsedTime);
 
 			UserControls(fElapsedTime);
 			break;
@@ -3984,11 +2927,13 @@ public:
 
 		// MIDI ==========================================================================================
 
+		// Repiting is notworking
+
 		// MIDI Looping
 		if (gameState == GameState::STATE_GAMEPLAY) {
 			if (g_MidiMessage == NULL) {
 				//fprintf(stderr, "End of MIDI\n");
-				PlayMapMIDI();
+				//PlayMapMIDI();
 			}
 		}
 
