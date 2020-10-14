@@ -5,6 +5,7 @@
 
 Editor::Editor(RaycastEngine* eng) {
 	engine = eng;
+	std::cout << "Editor constructor, engine name : " << engine->engineCore << std::endl;
 
 	CreateUIElements();
 }
